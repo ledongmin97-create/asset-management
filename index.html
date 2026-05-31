@@ -931,60 +931,61 @@
 
     <!-- KR MARKET -->
     <div class="tab-pane" id="pane-krmarket">
-      <div class="us-charts-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="us-chart-card">
-          <div class="us-chart-title">KOSPI <span style="font-size:11px;color:var(--gray-400);font-weight:400">(EWY)</span></div>
-          <div id="kr_kospi" style="height:180px;width:100%"></div>
-        </div>
-        <div class="us-chart-card">
-          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SSNLF · OTC)</span></div>
-          <div id="kr_samsung" style="height:180px;width:100%"></div>
-        </div>
-        <div class="us-chart-card">
-          <div class="us-chart-title">필라델피아 반도체 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SOXX)</span></div>
-          <div id="kr_hynix" style="height:180px;width:100%"></div>
-        </div>
-      </div>
 
+      <!-- 실시간 데이터 -->
       <div class="chart-card" style="margin-bottom:20px">
         <div class="chart-header">
           <div>
-            <div class="chart-title">상세 차트</div>
-            <div class="chart-subtitle">TradingView 실시간 · 우측 상단에서 심볼 직접 변경 가능</div>
+            <div class="chart-title">📡 한국 시장 실시간</div>
+            <div class="chart-subtitle">Yahoo Finance · KOSPI · KOSDAQ · 삼성전자 · SK하이닉스 · 환율</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="krFetchBtn" onclick="fetchKrMarketData(this)">실시간 업데이트</button>
+        </div>
+        <div id="krMarketResult">
+          <div class="empty-state" style="padding:28px 20px">
+            <div class="empty-state-icon">🇰🇷</div>
+            <div class="empty-state-text" style="margin-bottom:0">실시간 업데이트 버튼을 눌러주세요</div>
           </div>
         </div>
-        <div id="kr_main_chart" class="tradingview-widget-container" style="height:480px;width:100%;overflow:hidden"></div>
       </div>
 
-      <!-- KR CLAUDE ANALYSIS -->
-      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
-            <div>
-              <div style="font-size:14px;font-weight:700;color:var(--gray-900)">Claude 한국시장 분석</div>
-              <div style="font-size:11px;color:var(--gray-400)">2026년 5월 31일 기준 · 참고용</div>
-            </div>
+      <!-- EWY TradingView 차트 -->
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">EWY 차트</div>
+            <div class="chart-subtitle">iShares MSCI South Korea ETF · KOSPI 추종 · TradingView 실시간</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="renderKrMarketTab()">🔄 새로고침</button>
+        </div>
+        <div id="kr_main_chart" class="tradingview-widget-container" style="height:400px;width:100%;overflow:hidden"></div>
+      </div>
+
+      <!-- Claude 분석 -->
+      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--gray-900)">Claude 한국시장 분석</div>
+            <div style="font-size:11px;color:var(--gray-400)">실시간 업데이트 후 자동 반영 · 참고용</div>
+          </div>
         </div>
 
-        <!-- 시장 요약 -->
+        <!-- 시장 요약 카드 (실시간 업데이트로 자동 갱신) -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-          <div style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
-            <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:4px">KOSPI</div>
-            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">8,000+</div>
-            <div style="font-size:12px;color:var(--success);font-weight:600">▲ 사상 최고치 돌파</div>
-          </div>
-          <div style="background:var(--primary-light);border:1px solid #bfdbfe;border-radius:10px;padding:14px">
-            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px">KOSDAQ</div>
+          <div id="krCard_kospi" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">KOSPI</div>
             <div style="font-size:20px;font-weight:800;color:var(--gray-900)">-</div>
-            <div style="font-size:12px;color:var(--primary);font-weight:600">실시간 차트 참고</div>
+            <div style="font-size:12px;color:var(--gray-400)">업데이트 필요</div>
           </div>
-          <div style="background:var(--danger-light);border:1px solid #fecaca;border-radius:10px;padding:14px">
-            <div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:4px">원/달러</div>
-            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">1,500+</div>
-            <div style="font-size:12px;color:var(--danger);font-weight:600">▲ 강달러 · 원화 약세</div>
+          <div id="krCard_kosdaq" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">KOSDAQ</div>
+            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">-</div>
+            <div style="font-size:12px;color:var(--gray-400)">업데이트 필요</div>
+          </div>
+          <div id="krCard_rate" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">원/달러</div>
+            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">-</div>
+            <div style="font-size:12px;color:var(--gray-400)">업데이트 필요</div>
           </div>
         </div>
 
@@ -992,7 +993,7 @@
         <div style="background:var(--primary-light);border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px">
           <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px">🔥 지금 핵심 이슈</div>
           <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--gray-700);line-height:1.5">
-            <div>• <strong>KOSPI 8,000 돌파</strong> — 사상 최고치 경신, 외국인 매수세 유입 및 반도체·AI 수혜주 강세 주도</div>
+            <div>• <strong>KOSPI 사상 최고치 경신</strong> — 외국인 매수세 유입 및 반도체·AI 수혜주 강세 주도</div>
             <div>• <strong>원/달러 1,500원 돌파</strong> — 강달러 기조 지속, 수출주 원화환산 실적 수혜 vs 수입물가 부담</div>
             <div>• <strong>HBM 메모리 슈퍼사이클</strong> — SK하이닉스 HBM3E NVIDIA 독점 공급, 삼성전자 HBM4 양산 경쟁 본격화</div>
           </div>
@@ -1011,26 +1012,10 @@
           </div>
           <div class="analysis-card">
             <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bfdbfe">⭐ 주목 종목</div>
-            <div class="pick-row">
-              <div class="pick-ticker">000660</div>
-              <div class="pick-info"><div class="pick-name">SK하이닉스</div><div class="pick-desc">HBM3E NVIDIA 독점공급, AI 메모리 최대 수혜주</div></div>
-              <span class="pick-badge badge-strong-buy">강력매수</span>
-            </div>
-            <div class="pick-row">
-              <div class="pick-ticker">005930</div>
-              <div class="pick-info"><div class="pick-name">삼성전자</div><div class="pick-desc">HBM4 양산 준비, 파운드리 수주 회복세, 저평가 구간</div></div>
-              <span class="pick-badge badge-buy">매수</span>
-            </div>
-            <div class="pick-row">
-              <div class="pick-ticker">373220</div>
-              <div class="pick-info"><div class="pick-name">LG에너지솔루션</div><div class="pick-desc">북미 IRA 수혜, GM·스텔란티스 JV 공장 풀가동</div></div>
-              <span class="pick-badge badge-buy">매수</span>
-            </div>
-            <div class="pick-row">
-              <div class="pick-ticker">EWY</div>
-              <div class="pick-info"><div class="pick-name">iShares Korea ETF</div><div class="pick-desc">KOSPI 전체 노출, 원화 강세·밸류업 정책 수혜</div></div>
-              <span class="pick-badge badge-income">분산투자</span>
-            </div>
+            <div class="pick-row"><div class="pick-ticker">000660</div><div class="pick-info"><div class="pick-name">SK하이닉스</div><div class="pick-desc">HBM3E NVIDIA 독점공급, AI 메모리 최대 수혜주</div></div><span class="pick-badge badge-strong-buy">강력매수</span></div>
+            <div class="pick-row"><div class="pick-ticker">005930</div><div class="pick-info"><div class="pick-name">삼성전자</div><div class="pick-desc">HBM4 양산 준비, 파운드리 수주 회복세, 저평가</div></div><span class="pick-badge badge-buy">매수</span></div>
+            <div class="pick-row"><div class="pick-ticker">373220</div><div class="pick-info"><div class="pick-name">LG에너지솔루션</div><div class="pick-desc">북미 IRA 수혜, GM·스텔란티스 JV 공장 풀가동</div></div><span class="pick-badge badge-buy">매수</span></div>
+            <div class="pick-row"><div class="pick-ticker">EWY</div><div class="pick-info"><div class="pick-name">iShares Korea ETF</div><div class="pick-desc">KOSPI 전체 노출, 밸류업 정책 수혜</div></div><span class="pick-badge badge-income">분산투자</span></div>
           </div>
         </div>
 
@@ -1042,10 +1027,9 @@
           <div class="risk-row"><span class="risk-icon">🇨🇳</span><div class="risk-info"><div class="risk-title">중국 경쟁 심화</div><div class="risk-desc">중국 반도체·배터리 기업의 저가 공세</div></div><span class="risk-level risk-medium">중간</span></div>
           <div class="risk-row"><span class="risk-icon">🏛️</span><div class="risk-info"><div class="risk-title">정치 불확실성</div><div class="risk-desc">국내 정치 리스크 및 대선 전후 정책 변동</div></div><span class="risk-level risk-medium">중간</span></div>
         </div>
-
         <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:12px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
           <span>🤖 Claude AI 분석 · 참고용, 투자 손실 책임 없음</span>
-          <span>분석 기준: 2026.05.31</span>
+          <span id="krAnalysisTime">갱신: 실시간 업데이트 후 표시</span>
         </div>
       </div>
     </div>
@@ -1872,30 +1856,6 @@ let krMarketInitialized = false;
 function renderKrMarketTab() {
   if (krMarketInitialized) return;
   krMarketInitialized = true;
-
-  const miniCharts = [
-    { id: 'kr_kospi',   symbol: 'AMEX:EWY'   },
-    { id: 'kr_samsung', symbol: 'OTC:SSNLF'  },
-    { id: 'kr_hynix',   symbol: 'NASDAQ:SOXX' },
-  ];
-  miniCharts.forEach(({ id, symbol }) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const wd = document.createElement('div');
-    wd.className = 'tradingview-widget-container__widget';
-    el.appendChild(wd);
-    const s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
-    s.async = true;
-    s.textContent = JSON.stringify({
-      symbol, width: '100%', height: 180, locale: 'ko',
-      dateRange: '12M', colorTheme: 'light', isTransparent: false,
-      trendLineColor: '#16a34a', underLineColor: 'rgba(22,163,74,0.1)'
-    });
-    el.appendChild(s);
-  });
-
   const main = document.getElementById('kr_main_chart');
   if (main) {
     const wd = document.createElement('div');
@@ -1904,21 +1864,84 @@ function renderKrMarketTab() {
     main.appendChild(wd);
     const s = document.createElement('script');
     s.type = 'text/javascript';
-    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
     s.async = true;
     s.textContent = JSON.stringify({
-      symbols: [
-        ['KOSPI (EWY)', 'AMEX:EWY|12M'],
-        ['삼성전자 (SSNLF)', 'OTC:SSNLF|12M'],
-        ['필라델피아 반도체 (SOXX)', 'NASDAQ:SOXX|12M'],
-      ],
-      chartOnly: false, width: '100%', height: 480, locale: 'ko',
-      colorTheme: 'light', autosize: false, showVolume: false,
-      hideDateRanges: false, scalePosition: 'right', scaleMode: 'Normal',
-      lineWidth: 2, lineType: 0, chartType: 'area',
-      dateRanges: ['1d|1','1m|30','3m|60','12m|1D','60m|1W','all|1M']
+      symbol: 'AMEX:EWY', width: '100%', height: 400, locale: 'ko',
+      dateRange: '12M', colorTheme: 'light', isTransparent: false,
+      trendLineColor: '#16a34a', underLineColor: 'rgba(22,163,74,0.1)'
     });
     main.appendChild(s);
+  }
+}
+
+async function fetchKrMarketData(btn) {
+  btn.disabled = true; btn.textContent = '불러오는 중...';
+  const resultEl = document.getElementById('krMarketResult');
+  const syms = ['^KS11','^KQ11','005930.KS','000660.KS','KRW=X'];
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/quote?symbols=${syms.join(',')}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName&corsDomain=finance.yahoo.com`;
+    const r = await fetch(url, { headers: {'User-Agent':'Mozilla/5.0'} });
+    const d = await r.json();
+    const quotes = {};
+    d.quoteResponse.result.forEach(q => { quotes[q.symbol] = q; });
+
+    const fmt  = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
+    const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
+    const arrow  = c => c >= 0 ? '▲' : '▼';
+
+    // 분석 카드 업데이트
+    const updateCard = (id, label, value, chgPct, colorClass, borderColor) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const up = chgPct >= 0;
+      el.style.cssText = `background:var(--${colorClass}-light);border:1px solid ${borderColor};border-radius:10px;padding:14px`;
+      el.innerHTML = `
+        <div style="font-size:11px;font-weight:700;color:var(--${colorClass});margin-bottom:4px">${label}</div>
+        <div style="font-size:20px;font-weight:800;color:var(--gray-900)">${value}</div>
+        <div style="font-size:12px;color:var(--${up?'success':'danger'});font-weight:600">${arrow(chgPct)} ${Math.abs(chgPct||0).toFixed(2)}%</div>`;
+    };
+
+    const ks = quotes['^KS11'], kq = quotes['^KQ11'], fx = quotes['KRW=X'];
+    if (ks) updateCard('krCard_kospi',  'KOSPI',    fmt(ks.regularMarketPrice,2), ks.regularMarketChangePercent, 'success', '#bbf7d0');
+    if (kq) updateCard('krCard_kosdaq', 'KOSDAQ',   fmt(kq.regularMarketPrice,2), kq.regularMarketChangePercent, 'primary', '#bfdbfe');
+    if (fx) updateCard('krCard_rate',   '원/달러',  fmt(fx.regularMarketPrice,2)+'원', fx.regularMarketChangePercent, fx.regularMarketChangePercent>=0?'danger':'success', fx.regularMarketChangePercent>=0?'#fecaca':'#bbf7d0');
+
+    // 주요 종목 테이블
+    const stockSyms = ['005930.KS','000660.KS'];
+    const rows = stockSyms.map(sym => {
+      const q = quotes[sym]; if (!q) return '';
+      const chg = q.regularMarketChangePercent || 0;
+      return `<tr>
+        <td style="padding:9px 12px;font-weight:700;color:var(--gray-900)">${q.shortName||sym}</td>
+        <td style="padding:9px 12px;text-align:right">${fmt(q.regularMarketPrice)}원</td>
+        <td style="padding:9px 12px;text-align:right"><span class="${chgCls(chg)}">${chg>=0?'+':''}${chg.toFixed(2)}%</span></td>
+        <td style="padding:9px 12px;text-align:right;color:var(--gray-400);font-size:11px">${fmt(q.fiftyTwoWeekLow)} ~ ${fmt(q.fiftyTwoWeekHigh)}</td>
+      </tr>`;
+    }).join('');
+
+    resultEl.innerHTML = `
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--gray-200)">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px">
+          <thead><tr style="background:var(--gray-50)">
+            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">종목</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">현재가</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">등락</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">52주 범위</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
+
+    const timeEl = document.getElementById('krAnalysisTime');
+    if (timeEl) timeEl.textContent = '갱신: ' + new Date().toLocaleString('ko-KR');
+    toast('한국 시장 데이터 갱신 완료!', 'success');
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:16px">데이터 로드 실패: ${e.message}</div>`;
+    toast('한국 시장 데이터 로드 실패', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔄 새로고침';
   }
 }
 
