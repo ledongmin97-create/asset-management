@@ -390,7 +390,7 @@
       <div id="stockContent"></div>
 
       <!-- PORTFOLIO CLAUDE ANALYSIS -->
-      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-top:16px">
+      <div id="portfolioAnalysisSection" style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-top:16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
@@ -1005,6 +1005,30 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- 구글 시트 연결 -->
+<div class="overlay" id="sheetSetupOverlay" onclick="if(event.target===this)closeModal('sheetSetupOverlay')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">📊 구글 시트 연결</span>
+      <button class="modal-close" onclick="closeModal('sheetSetupOverlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.6">
+      본인의 구글 시트 URL에서 ID를 복사해 입력하세요.<br>
+      <span style="color:var(--gray-400);font-size:12px">예: docs.google.com/spreadsheets/d/<strong>여기가ID</strong>/edit</span>
+    </p>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>구글 시트 ID</label>
+      <input type="text" id="sheetIdInput" placeholder="시트 ID 붙여넣기"
+        style="width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+    </div>
+    <div id="sheetSetupError" style="display:none;font-size:12px;color:var(--danger);margin-bottom:8px"></div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('sheetSetupOverlay')">취소</button>
+      <button class="btn btn-primary" onclick="saveSheetId()">연결 후 동기화</button>
+    </div>
+  </div>
+</div>
+
 <!-- 비밀번호 변경 -->
 <div class="overlay" id="changePwOverlay" onclick="if(event.target===this)closeModal('changePwOverlay')">
   <div class="modal" style="max-width:380px">
@@ -1065,7 +1089,8 @@
 // ══════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════
-const SHEET_ID      = '1vK61RtHYE7HeA7FKdeEldp1Py5NGGpXB8e_hgRvUSEc';
+const OWNER_SHEET_ID = '1vK61RtHYE7HeA7FKdeEldp1Py5NGGpXB8e_hgRvUSEc';
+let   SHEET_ID       = '';
 const _now          = new Date();
 const CURRENT_MONTH = `${_now.getFullYear()}-${_now.getMonth()+1}`;
 const CURRENT_YEAR  = String(_now.getFullYear());
@@ -1246,6 +1271,13 @@ function tableToStocks(table) {
 }
 
 async function syncSheets() {
+  const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
+  if (isOwner) {
+    SHEET_ID = OWNER_SHEET_ID;
+  } else if (!SHEET_ID) {
+    openSheetSetup();
+    return;
+  }
   toast('구글 시트에서 데이터를 가져오는 중...', 'info');
   try {
     const [mTable, aTable, sTable] = await Promise.all([
@@ -2318,6 +2350,7 @@ async function loadFromFirestore() {
     annual  = d.annual  || JSON.parse(JSON.stringify(DEFAULT_ANNUAL));
     stocks  = d.stocks  || [];
     gasUrl  = d.gasUrl  || '';
+    if (d.sheetId) SHEET_ID = d.sheetId;
   } else {
     const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
     monthly = isOwner ? JSON.parse(JSON.stringify(DEFAULT_MONTHLY)) : [];
@@ -2349,6 +2382,7 @@ fbAuth.onAuthStateChanged(async (user) => {
     }
     document.getElementById('loginOverlay').style.display = 'none';
     await loadFromFirestore();
+    applyUserUI();
     render();
   } else {
     currentUser = null; currentUserMeta = null;
@@ -2358,6 +2392,35 @@ fbAuth.onAuthStateChanged(async (user) => {
     document.getElementById('adminBtn').style.display = 'none';
   }
 });
+
+// ── 구글 시트 설정 ──
+function openSheetSetup() {
+  document.getElementById('sheetIdInput').value = SHEET_ID || '';
+  document.getElementById('sheetSetupError').style.display = 'none';
+  document.getElementById('sheetSetupOverlay').classList.add('open');
+}
+
+async function saveSheetId() {
+  const id = document.getElementById('sheetIdInput').value.trim();
+  if (!id) {
+    const e = document.getElementById('sheetSetupError');
+    e.textContent = '시트 ID를 입력해주세요'; e.style.display = 'block'; return;
+  }
+  SHEET_ID = id;
+  if (currentUser) {
+    await fbDb.collection('userData').doc(currentUser.uid).update({ sheetId: id });
+  }
+  closeModal('sheetSetupOverlay');
+  syncSheets();
+}
+
+function applyUserUI() {
+  const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
+  const analysisEl = document.getElementById('portfolioAnalysisSection');
+  if (analysisEl) analysisEl.style.display = isOwner ? '' : 'none';
+  const sheetLink = document.querySelector('a[href*="spreadsheets"]');
+  if (sheetLink) sheetLink.style.display = isOwner ? '' : 'none';
+}
 
 // ── 비밀번호 변경 ──
 function openChangePw() {
