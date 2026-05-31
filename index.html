@@ -2289,8 +2289,9 @@ async function loadFromFirestore() {
     stocks  = d.stocks  || [];
     gasUrl  = d.gasUrl  || '';
   } else {
-    monthly = JSON.parse(JSON.stringify(DEFAULT_MONTHLY));
-    annual  = JSON.parse(JSON.stringify(DEFAULT_ANNUAL));
+    const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
+    monthly = isOwner ? JSON.parse(JSON.stringify(DEFAULT_MONTHLY)) : [];
+    annual  = isOwner ? JSON.parse(JSON.stringify(DEFAULT_ANNUAL))  : [];
     stocks  = [];
     gasUrl  = '';
   }
@@ -2380,9 +2381,7 @@ async function adminCreateUser() {
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     await fbDb.collection('userData').doc(data.localId).set({
-      monthly: JSON.parse(JSON.stringify(DEFAULT_MONTHLY)),
-      annual:  JSON.parse(JSON.stringify(DEFAULT_ANNUAL)),
-      stocks: [], gasUrl: ''
+      monthly: [], annual: [], stocks: [], gasUrl: ''
     });
     document.getElementById('newUserId').value = '';
     document.getElementById('newUserPw').value = '';
