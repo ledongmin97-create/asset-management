@@ -411,6 +411,7 @@
           </div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-outline btn-sm" onclick="copyPortfolioForClaude()">📋 Claude에게 보내기</button>
+            <button class="btn btn-primary btn-sm" onclick="openPasteAnalysisModal()">📥 분석 붙여넣기</button>
             <button class="btn btn-outline btn-sm" onclick="renderStocksTab()">🔄 새로고침</button>
           </div>
         </div>
@@ -1195,6 +1196,27 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- 분석 붙여넣기 -->
+<div class="overlay" id="pasteAnalysisOverlay" onclick="if(event.target===this)closeModal('pasteAnalysisOverlay')">
+  <div class="modal modal-wide" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title">📥 분석 결과 붙여넣기</span>
+      <button class="modal-close" onclick="closeModal('pasteAnalysisOverlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;line-height:1.6">
+      Claude.ai에서 받은 포트폴리오 분석 결과를 아래에 붙여넣으세요.<br>
+      <span style="font-size:11px;color:var(--gray-400)">마크다운 그대로 붙여넣으면 자동으로 표시됩니다. Firestore에 저장되어 모든 기기에서 유지됩니다.</span>
+    </p>
+    <textarea id="pasteAnalysisInput" placeholder="Claude.ai에서 복사한 분석 내용을 여기에 붙여넣으세요..."
+      style="width:100%;height:280px;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-outline" onclick="closeModal('pasteAnalysisOverlay')">취소</button>
+      <button class="btn btn-danger-soft btn-sm" onclick="clearPastedAnalysis()">초기화</button>
+      <button class="btn btn-primary" onclick="savePastedAnalysis()">저장 · 표시</button>
+    </div>
+  </div>
+</div>
 
 <!-- 구글 시트 연결 -->
 <div class="overlay" id="sheetSetupOverlay" onclick="if(event.target===this)closeModal('sheetSetupOverlay')">
@@ -2826,6 +2848,7 @@ fbAuth.onAuthStateChanged(async (user) => {
     await loadFromFirestore();
     applyUserUI();
     render();
+    loadUserAnalysis();
     document.getElementById('loadingOverlay').style.display = 'none';
   } else {
     currentUser = null; currentUserMeta = null;
@@ -2836,6 +2859,62 @@ fbAuth.onAuthStateChanged(async (user) => {
     document.getElementById('adminBtn').style.display = 'none';
   }
 });
+
+// ── 분석 붙여넣기 ──
+function openPasteAnalysisModal() {
+  const saved = localStorage.getItem('user_analysis_text') || '';
+  document.getElementById('pasteAnalysisInput').value = saved;
+  document.getElementById('pasteAnalysisOverlay').classList.add('open');
+}
+
+async function savePastedAnalysis() {
+  const text = document.getElementById('pasteAnalysisInput').value.trim();
+  if (!text) { toast('내용을 입력해주세요', 'error'); return; }
+  localStorage.setItem('user_analysis_text', text);
+  if (currentUser) {
+    await fbDb.collection('userData').doc(currentUser.uid).update({ userAnalysisText: text, userAnalysisTime: new Date().toISOString() });
+  }
+  displayPastedAnalysis(text);
+  closeModal('pasteAnalysisOverlay');
+  toast('분석이 저장되었습니다!', 'success');
+}
+
+async function clearPastedAnalysis() {
+  if (!confirm('저장된 분석을 초기화하시겠습니까?')) return;
+  localStorage.removeItem('user_analysis_text');
+  if (currentUser) {
+    await fbDb.collection('userData').doc(currentUser.uid).update({ userAnalysisText: '', userAnalysisTime: '' });
+  }
+  document.getElementById('pasteAnalysisInput').value = '';
+  loadUserAnalysis();
+  closeModal('pasteAnalysisOverlay');
+  toast('분석이 초기화되었습니다', 'info');
+}
+
+function displayPastedAnalysis(text, savedTime) {
+  const el = document.getElementById('portfolioAnalysisContent');
+  if (!el || !text) return;
+  const timeStr = savedTime ? new Date(savedTime).toLocaleString('ko-KR') : new Date().toLocaleString('ko-KR');
+  el.innerHTML = `
+    <div class="ai-result">${marked.parse(text)}</div>
+    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:10px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+      <span>🤖 Claude.ai 분석 · 투자 손실 책임 없음</span>
+      <span>저장 시각: ${timeStr}</span>
+    </div>`;
+}
+
+async function loadUserAnalysis() {
+  const el = document.getElementById('portfolioAnalysisContent');
+  if (!el) return;
+  let text = '', savedTime = '';
+  if (currentUser) {
+    const snap = await fbDb.collection('userData').doc(currentUser.uid).get();
+    text = snap.data()?.userAnalysisText || '';
+    savedTime = snap.data()?.userAnalysisTime || '';
+  }
+  if (!text) text = localStorage.getItem('user_analysis_text') || '';
+  if (text) displayPastedAnalysis(text, savedTime);
+}
 
 // ── 구글 시트 설정 ──
 function openSheetSetup() {
