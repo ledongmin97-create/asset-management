@@ -1957,22 +1957,27 @@ async function fetchKrMarketData(btn) {
     }).join('');
 
     resultEl.innerHTML = `
-      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--gray-200)">
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:16px">
         <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:480px">
           <thead><tr style="background:var(--gray-50)">
             <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">종목</th>
             <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">현재가</th>
-            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">등락</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">전일대비</th>
             <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">52주 범위</th>
-            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">1개월</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">1개월 추이</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
+      </div>
+      <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:12px">📈 삼성전자 · SK하이닉스 1개월 추이 (% 기준)</div>
+        <div style="position:relative;height:200px"><canvas id="krDetailChart"></canvas></div>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
 
     // 스파크라인 그리기
     setTimeout(() => {
+      // 스파크라인
       stockSyms.forEach(sym => {
         const q = quotes[sym]; if (!q?.closes?.length) return;
         const cid = `krSparkline_${sym.replace(/[\^.]/g,'_')}`;
@@ -1980,10 +1985,41 @@ async function fetchKrMarketData(btn) {
         const up = q.regularMarketChangePercent >= 0;
         new Chart(canvas.getContext('2d'), {
           type: 'line',
-          data: { labels: q.closes.map((_,i)=>i), datasets: [{ data: q.closes, borderColor: up ? '#16a34a' : '#dc2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 }] },
-          options: { animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, responsive: true, maintainAspectRatio: false }
+          data: { labels: q.closes.map((_,i)=>i), datasets: [{ data: q.closes, borderColor: up?'#16a34a':'#dc2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 }] },
+          options: { animation: false, plugins: { legend:{display:false}, tooltip:{enabled:false} }, scales: { x:{display:false}, y:{display:false} }, responsive: true, maintainAspectRatio: false }
         });
       });
+
+      // 상세 비교 차트 (% 정규화)
+      const detailCanvas = document.getElementById('krDetailChart');
+      if (detailCanvas) {
+        const norm = closes => { if (!closes.length) return []; const b = closes[0]; return closes.map(c => +((c-b)/b*100).toFixed(2)); };
+        const sam = quotes['005930.KS'], hyn = quotes['000660.KS'];
+        const len = Math.max(sam?.closes?.length||0, hyn?.closes?.length||0);
+        const labels = Array.from({length:len}, (_,i) => i===0?'1개월 전' : i===len-1?'현재' : '');
+        new Chart(detailCanvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              { label: '삼성전자', data: norm(sam?.closes||[]), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.08)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
+              { label: 'SK하이닉스', data: norm(hyn?.closes||[]), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.08)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
+            ]
+          },
+          options: {
+            animation: false, responsive: true, maintainAspectRatio: false,
+            interaction: { mode:'index', intersect:false },
+            plugins: {
+              legend: { position:'top', labels:{ font:{size:12}, usePointStyle:true, pointStyleWidth:8 } },
+              tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y>=0?'+':''}${ctx.parsed.y}%` } }
+            },
+            scales: {
+              x: { grid:{display:false}, ticks:{font:{size:10}, color:'#94a3b8', maxTicksLimit:4} },
+              y: { grid:{color:'#f1f5f9'}, ticks:{font:{size:10}, color:'#94a3b8', callback: v=>(v>=0?'+':'')+v+'%'}, border:{display:false} }
+            }
+          }
+        });
+      }
     }, 50);
 
     const timeEl = document.getElementById('krAnalysisTime');
