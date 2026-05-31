@@ -1019,11 +1019,22 @@
           </div>
         </div>
 
+        <!-- 현재 주의사항 -->
+        <div style="background:var(--warning-light);border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+          <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:10px">⚠️ 현재 주의사항</div>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--gray-700);line-height:1.5">
+            <div>• <strong>원/달러 1,500원대 고착화</strong> — 환율 급등으로 수입물가 상승, 소비주·내수주 실적 압박 지속</div>
+            <div>• <strong>고금리 장기화</strong> — 한국은행 기준금리 동결 기조, 부동산·건설·금융 섹터 부실 리스크 상존</div>
+            <div>• <strong>반도체 수출 규제 확대 가능성</strong> — 미국 대중(對中) 반도체 제재 강화 시 삼성·SK하이닉스 수출 제한 타격</div>
+            <div>• <strong>중국산 저가 배터리 공세</strong> — LG에너지솔루션·삼성SDI, CATL 저가 경쟁으로 유럽 수주 압박</div>
+          </div>
+        </div>
+
         <!-- 리스크 -->
         <div class="analysis-card" style="margin-bottom:0">
-          <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #fecaca">⚠️ 주요 리스크</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #fecaca">🛡️ 리스크 레벨</div>
           <div class="risk-row"><span class="risk-icon">🇺🇸</span><div class="risk-info"><div class="risk-title">미중 무역갈등</div><div class="risk-desc">반도체 수출 규제 확대 시 삼성·SK하이닉스 타격</div></div><span class="risk-level risk-high">높음</span></div>
-          <div class="risk-row"><span class="risk-icon">💱</span><div class="risk-info"><div class="risk-title">환율 변동성</div><div class="risk-desc">원/달러 급변동 시 수출주 실적 불확실성</div></div><span class="risk-level risk-medium">중간</span></div>
+          <div class="risk-row"><span class="risk-icon">💱</span><div class="risk-info"><div class="risk-title">환율 변동성</div><div class="risk-desc">원/달러 1,500원대, 수출주 수혜 vs 수입물가 부담</div></div><span class="risk-level risk-medium">중간</span></div>
           <div class="risk-row"><span class="risk-icon">🇨🇳</span><div class="risk-info"><div class="risk-title">중국 경쟁 심화</div><div class="risk-desc">중국 반도체·배터리 기업의 저가 공세</div></div><span class="risk-level risk-medium">중간</span></div>
           <div class="risk-row"><span class="risk-icon">🏛️</span><div class="risk-info"><div class="risk-title">정치 불확실성</div><div class="risk-desc">국내 정치 리스크 및 대선 전후 정책 변동</div></div><span class="risk-level risk-medium">중간</span></div>
         </div>
@@ -1882,29 +1893,31 @@ async function fetchKrMarketData(btn) {
   try {
     const proxy = 'https://corsproxy.io/?';
     const fetchChart = async (sym) => {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo`;
       const r = await fetch(proxy + encodeURIComponent(url));
       const d = await r.json();
-      const meta = d?.chart?.result?.[0]?.meta;
+      const res  = d?.chart?.result?.[0];
+      const meta = res?.meta;
       if (!meta) return null;
       const price = meta.regularMarketPrice;
       const prev  = meta.chartPreviousClose || meta.previousClose;
       const chgPct = prev ? (price - prev) / prev * 100 : 0;
+      const closes = res?.indicators?.quote?.[0]?.close?.filter(Boolean) || [];
       return {
         symbol: sym,
         shortName: meta.longName || meta.shortName || sym,
         regularMarketPrice: price,
         regularMarketChangePercent: chgPct,
-        regularMarketChange: price - (prev||price),
         fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
         fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+        closes,
       };
     };
     const results = await Promise.all(syms.map(fetchChart));
     const quotes = {};
     results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
 
-    const fmt  = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
+    const fmt    = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
     const arrow  = c => c >= 0 ? '▲' : '▼';
 
@@ -1921,36 +1934,57 @@ async function fetchKrMarketData(btn) {
     };
 
     const ks = quotes['^KS11'], kq = quotes['^KQ11'], fx = quotes['KRW=X'];
-    if (ks) updateCard('krCard_kospi',  'KOSPI',    fmt(ks.regularMarketPrice,2), ks.regularMarketChangePercent, 'success', '#bbf7d0');
-    if (kq) updateCard('krCard_kosdaq', 'KOSDAQ',   fmt(kq.regularMarketPrice,2), kq.regularMarketChangePercent, 'primary', '#bfdbfe');
-    if (fx) updateCard('krCard_rate',   '원/달러',  fmt(fx.regularMarketPrice,2)+'원', fx.regularMarketChangePercent, fx.regularMarketChangePercent>=0?'danger':'success', fx.regularMarketChangePercent>=0?'#fecaca':'#bbf7d0');
+    if (ks) updateCard('krCard_kospi',  'KOSPI',   fmt(ks.regularMarketPrice,2), ks.regularMarketChangePercent, 'success', '#bbf7d0');
+    if (kq) updateCard('krCard_kosdaq', 'KOSDAQ',  fmt(kq.regularMarketPrice,2), kq.regularMarketChangePercent, 'primary', '#bfdbfe');
+    if (fx) {
+      const up = fx.regularMarketChangePercent >= 0;
+      updateCard('krCard_rate', '원/달러', fmt(fx.regularMarketPrice,2)+'원', fx.regularMarketChangePercent, up?'danger':'success', up?'#fecaca':'#bbf7d0');
+    }
 
-    // 주요 종목 테이블
+    // 주요 종목 테이블 + 미니 차트
     const stockSyms = ['005930.KS','000660.KS'];
     const rows = stockSyms.map(sym => {
       const q = quotes[sym]; if (!q) return '';
       const chg = q.regularMarketChangePercent || 0;
+      const cid = `krSparkline_${sym.replace(/[\^.]/g,'_')}`;
       return `<tr>
         <td style="padding:9px 12px;font-weight:700;color:var(--gray-900)">${q.shortName||sym}</td>
         <td style="padding:9px 12px;text-align:right">${fmt(q.regularMarketPrice)}원</td>
         <td style="padding:9px 12px;text-align:right"><span class="${chgCls(chg)}">${chg>=0?'+':''}${chg.toFixed(2)}%</span></td>
         <td style="padding:9px 12px;text-align:right;color:var(--gray-400);font-size:11px">${fmt(q.fiftyTwoWeekLow)} ~ ${fmt(q.fiftyTwoWeekHigh)}</td>
+        <td style="padding:6px 12px"><div style="width:90px;height:36px"><canvas id="${cid}"></canvas></div></td>
       </tr>`;
     }).join('');
 
     resultEl.innerHTML = `
       <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--gray-200)">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:480px">
           <thead><tr style="background:var(--gray-50)">
             <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">종목</th>
             <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">현재가</th>
             <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">등락</th>
             <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">52주 범위</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">1개월</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
+
+    // 스파크라인 그리기
+    setTimeout(() => {
+      stockSyms.forEach(sym => {
+        const q = quotes[sym]; if (!q?.closes?.length) return;
+        const cid = `krSparkline_${sym.replace(/[\^.]/g,'_')}`;
+        const canvas = document.getElementById(cid); if (!canvas) return;
+        const up = q.regularMarketChangePercent >= 0;
+        new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: { labels: q.closes.map((_,i)=>i), datasets: [{ data: q.closes, borderColor: up ? '#16a34a' : '#dc2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 }] },
+          options: { animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, responsive: true, maintainAspectRatio: false }
+        });
+      });
+    }, 50);
 
     const timeEl = document.getElementById('krAnalysisTime');
     if (timeEl) timeEl.textContent = '갱신: ' + new Date().toLocaleString('ko-KR');
