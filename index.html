@@ -933,19 +933,19 @@
     <div class="tab-pane" id="pane-krmarket">
       <div class="us-charts-grid">
         <div class="us-chart-card">
-          <div class="us-chart-title">KOSPI 200 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(KODEX 200)</span></div>
+          <div class="us-chart-title">한국시장 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(EWY · KOSPI 추종)</span></div>
           <div id="kr_kospi" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">KOSDAQ 150 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(KODEX KOSDAQ150)</span></div>
+          <div class="us-chart-title">한국 ETF <span style="font-size:11px;color:var(--gray-400);font-weight:400">(FLKR · FTSE Korea)</span></div>
           <div id="kr_kosdaq" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(005930)</span></div>
+          <div class="us-chart-title">쿠팡 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(CPNG · NYSE)</span></div>
           <div id="kr_samsung" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">SK하이닉스 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(000660)</span></div>
+          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SSNLF · OTC)</span></div>
           <div id="kr_hynix" style="height:180px;width:100%"></div>
         </div>
       </div>
@@ -958,6 +958,101 @@
           </div>
         </div>
         <div id="kr_main_chart" style="height:480px;width:100%"></div>
+      </div>
+
+      <!-- KR CLAUDE ANALYSIS -->
+      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--gray-900)">Claude 한국시장 분석</div>
+              <div style="font-size:11px;color:var(--gray-400)">2026년 5월 기준 · 참고용</div>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="renderKrMarketTab()">🔄 새로고침</button>
+        </div>
+
+        <!-- 시장 요약 -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+          <div style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:4px">KOSPI</div>
+            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">2,630</div>
+            <div style="font-size:12px;color:var(--success);font-weight:600">▲ 반등 구간 · 외국인 순매수</div>
+          </div>
+          <div style="background:var(--primary-light);border:1px solid #bfdbfe;border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px">KOSDAQ</div>
+            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">760</div>
+            <div style="font-size:12px;color:var(--primary);font-weight:600">▲ 바이오·2차전지 주도</div>
+          </div>
+          <div style="background:var(--purple-light);border:1px solid #ddd6fe;border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:4px">원/달러</div>
+            <div style="font-size:20px;font-weight:800;color:var(--gray-900)">1,380</div>
+            <div style="font-size:12px;color:var(--purple);font-weight:600">▼ 강달러 완화 · 원화 강세</div>
+          </div>
+        </div>
+
+        <!-- 핵심 이슈 -->
+        <div style="background:var(--primary-light);border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+          <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px">🔥 지금 핵심 이슈</div>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--gray-700);line-height:1.5">
+            <div>• <strong>HBM 메모리 슈퍼사이클</strong> — SK하이닉스 HBM3E NVIDIA 독점 공급, 삼성전자 HBM4 양산 경쟁 본격화</div>
+            <div>• <strong>밸류업 프로그램</strong> — 정부 주도 기업가치 제고 정책으로 저PBR 금융·지주사 재평가 지속</div>
+            <div>• <strong>2차전지 회복</strong> — LG에너지솔루션·삼성SDI, 미국 IRA 보조금 수혜로 북미 공장 가동률 상승</div>
+          </div>
+        </div>
+
+        <!-- 섹터 전망 + 추천 종목 -->
+        <div class="analysis-grid" style="margin-bottom:18px">
+          <div class="analysis-card">
+            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bbf7d0">🏭 섹터 전망</div>
+            <div class="sector-row"><span class="sector-name">💾 반도체 (HBM·AI메모리)</span><span class="sector-rating rating-strong">매우 강세</span></div>
+            <div class="sector-row"><span class="sector-name">🔋 2차전지·배터리</span><span class="sector-rating rating-positive">강세</span></div>
+            <div class="sector-row"><span class="sector-name">🏦 금융·지주 (밸류업)</span><span class="sector-rating rating-positive">강세</span></div>
+            <div class="sector-row"><span class="sector-name">💊 바이오·제약</span><span class="sector-rating rating-neutral">중립</span></div>
+            <div class="sector-row"><span class="sector-name">🛒 소비재·유통</span><span class="sector-rating rating-neutral">중립</span></div>
+            <div class="sector-row"><span class="sector-name">🏠 부동산·건설</span><span class="sector-rating rating-negative">약세</span></div>
+          </div>
+          <div class="analysis-card">
+            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bfdbfe">⭐ 주목 종목</div>
+            <div class="pick-row">
+              <div class="pick-ticker">000660</div>
+              <div class="pick-info"><div class="pick-name">SK하이닉스</div><div class="pick-desc">HBM3E NVIDIA 독점공급, AI 메모리 최대 수혜주</div></div>
+              <span class="pick-badge badge-strong-buy">강력매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">005930</div>
+              <div class="pick-info"><div class="pick-name">삼성전자</div><div class="pick-desc">HBM4 양산 준비, 파운드리 수주 회복세, 저평가 구간</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">373220</div>
+              <div class="pick-info"><div class="pick-name">LG에너지솔루션</div><div class="pick-desc">북미 IRA 수혜, GM·스텔란티스 JV 공장 풀가동</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">EWY</div>
+              <div class="pick-info"><div class="pick-name">iShares Korea ETF</div><div class="pick-desc">KOSPI 전체 노출, 원화 강세·밸류업 정책 수혜</div></div>
+              <span class="pick-badge badge-income">분산투자</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 리스크 -->
+        <div class="analysis-card" style="margin-bottom:0">
+          <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #fecaca">⚠️ 주요 리스크</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="risk-row"><span class="risk-icon">🇺🇸</span><div class="risk-info"><div class="risk-title">미중 무역갈등</div><div class="risk-desc">반도체 수출 규제 확대 시 삼성·SK하이닉스 타격</div></div><span class="risk-level risk-high">높음</span></div>
+            <div class="risk-row"><span class="risk-icon">💱</span><div class="risk-info"><div class="risk-title">환율 변동성</div><div class="risk-desc">원/달러 급변동 시 수출주 실적 불확실성</div></div><span class="risk-level risk-medium">중간</span></div>
+            <div class="risk-row"><span class="risk-icon">🇨🇳</span><div class="risk-info"><div class="risk-title">중국 경쟁 심화</div><div class="risk-desc">중국 반도체·배터리 기업의 저가 공세</div></div><span class="risk-level risk-medium">중간</span></div>
+            <div class="risk-row"><span class="risk-icon">🏛️</span><div class="risk-info"><div class="risk-title">정치 불확실성</div><div class="risk-desc">국내 정치 리스크 및 대선 전후 정책 변동</div></div><span class="risk-level risk-medium">중간</span></div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:12px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <span>🤖 Claude AI 분석 · 참고용, 투자 손실 책임 없음</span>
+          <span>분석 기준: 2026.05</span>
+        </div>
       </div>
     </div>
 
@@ -1785,10 +1880,10 @@ function renderKrMarketTab() {
   krMarketInitialized = true;
 
   const miniCharts = [
-    { id: 'kr_kospi',   symbol: 'KRX:069500' },
-    { id: 'kr_kosdaq',  symbol: 'KRX:229200' },
-    { id: 'kr_samsung', symbol: 'KRX:005930' },
-    { id: 'kr_hynix',   symbol: 'KRX:000660' },
+    { id: 'kr_kospi',   symbol: 'AMEX:EWY'    },
+    { id: 'kr_kosdaq',  symbol: 'NASDAQ:FLKR'  },
+    { id: 'kr_samsung', symbol: 'NYSE:CPNG'    },
+    { id: 'kr_hynix',   symbol: 'OTC:SSNLF'   },
   ];
   miniCharts.forEach(({ id, symbol }) => {
     const el = document.getElementById(id);
@@ -1820,10 +1915,10 @@ function renderKrMarketTab() {
     s.async = true;
     s.textContent = JSON.stringify({
       symbols: [
-        ['KOSPI 200 (069500)', 'KRX:069500|12M'],
-        ['KOSDAQ 150 (229200)', 'KRX:229200|12M'],
-        ['삼성전자 (005930)', 'KRX:005930|12M'],
-        ['SK하이닉스 (000660)', 'KRX:000660|12M'],
+        ['한국시장 (EWY)', 'AMEX:EWY|12M'],
+        ['한국 ETF (FLKR)', 'NASDAQ:FLKR|12M'],
+        ['쿠팡 (CPNG)', 'NYSE:CPNG|12M'],
+        ['삼성전자 OTC (SSNLF)', 'OTC:SSNLF|12M'],
       ],
       chartOnly: false, width: '100%', height: 480, locale: 'ko',
       colorTheme: 'light', autosize: false, showVolume: false,
