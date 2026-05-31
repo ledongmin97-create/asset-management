@@ -931,21 +931,17 @@
 
     <!-- KR MARKET -->
     <div class="tab-pane" id="pane-krmarket">
-      <div class="us-charts-grid">
+      <div class="us-charts-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="us-chart-card">
-          <div class="us-chart-title">한국시장 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(EWY · KOSPI 추종)</span></div>
+          <div class="us-chart-title">KOSPI <span style="font-size:11px;color:var(--gray-400);font-weight:400">(EWY)</span></div>
           <div id="kr_kospi" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">한국 ETF <span style="font-size:11px;color:var(--gray-400);font-weight:400">(FLKR · FTSE Korea)</span></div>
-          <div id="kr_kosdaq" style="height:180px;width:100%"></div>
-        </div>
-        <div class="us-chart-card">
-          <div class="us-chart-title">쿠팡 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(CPNG · NYSE)</span></div>
+          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SSNLF · OTC)</span></div>
           <div id="kr_samsung" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SSNLF · OTC)</span></div>
+          <div class="us-chart-title">SK하이닉스 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(HXSCF · OTC)</span></div>
           <div id="kr_hynix" style="height:180px;width:100%"></div>
         </div>
       </div>
@@ -1878,10 +1874,9 @@ function renderKrMarketTab() {
   krMarketInitialized = true;
 
   const miniCharts = [
-    { id: 'kr_kospi',   symbol: 'AMEX:EWY'    },
-    { id: 'kr_kosdaq',  symbol: 'NASDAQ:FLKR'  },
-    { id: 'kr_samsung', symbol: 'NYSE:CPNG'    },
-    { id: 'kr_hynix',   symbol: 'OTC:SSNLF'   },
+    { id: 'kr_kospi',   symbol: 'AMEX:EWY'   },
+    { id: 'kr_samsung', symbol: 'OTC:SSNLF'  },
+    { id: 'kr_hynix',   symbol: 'OTC:HXSCF'  },
   ];
   miniCharts.forEach(({ id, symbol }) => {
     const el = document.getElementById(id);
@@ -1913,10 +1908,9 @@ function renderKrMarketTab() {
     s.async = true;
     s.textContent = JSON.stringify({
       symbols: [
-        ['한국시장 (EWY)', 'AMEX:EWY|12M'],
-        ['한국 ETF (FLKR)', 'NASDAQ:FLKR|12M'],
-        ['쿠팡 (CPNG)', 'NYSE:CPNG|12M'],
-        ['삼성전자 OTC (SSNLF)', 'OTC:SSNLF|12M'],
+        ['KOSPI (EWY)', 'AMEX:EWY|12M'],
+        ['삼성전자 (SSNLF)', 'OTC:SSNLF|12M'],
+        ['SK하이닉스 (HXSCF)', 'OTC:HXSCF|12M'],
       ],
       chartOnly: false, width: '100%', height: 480, locale: 'ko',
       colorTheme: 'light', autosize: false, showVolume: false,
