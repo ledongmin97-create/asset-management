@@ -2300,7 +2300,16 @@ fbAuth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
     const metaSnap = await fbDb.collection('users').doc(user.uid).get();
-    currentUserMeta = metaSnap.exists ? metaSnap.data() : { username: user.email.split('@')[0], role: 'user' };
+    const username = user.email.split('@')[0];
+    if (!metaSnap.exists) {
+      const role = username === 'admin' ? 'admin' : 'user';
+      await fbDb.collection('users').doc(user.uid).set({
+        username, role, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      currentUserMeta = { username, role };
+    } else {
+      currentUserMeta = metaSnap.data();
+    }
     const uname = currentUserMeta.username || user.email.split('@')[0];
     document.getElementById('headerUsername').textContent = uname;
     document.getElementById('userAvatar').textContent = uname.slice(0,2).toUpperCase();
