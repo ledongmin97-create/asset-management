@@ -1699,11 +1699,14 @@ function renderStocksTab() {
 function renderProjection() {
   const el = document.getElementById('projectionContent');
   if (!el) return;
-  const base   = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
-  const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
-  const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+  const stockBase = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const profit    = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+  const cost      = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+  // 주식 데이터 없으면 월별 '투자' 최신값으로 폴백
+  const monthlyBase = monthly.filter(m=>m.투자!=null).at(-1)?.투자 || 0;
+  const base = stockBase || monthlyBase;
   if (!base) {
-    el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:20px 0;text-align:center">주식 데이터를 먼저 불러와주세요.</div>';
+    el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:20px 0;text-align:center">데이터를 먼저 불러와주세요.</div>';
     return;
   }
 
@@ -1743,25 +1746,25 @@ function renderProjection() {
 
   const marketScenarios = [
     { label:'낙관', color:'var(--success)', bg:'var(--success-light)', border:'#bbf7d0', icon:'🚀',
-      desc:`연 +15% (AI·반도체 슈퍼사이클 지속)`,
+      desc:`연 +15% · 배당 재투자 포함 총수익률 (AI·반도체 슈퍼사이클 지속)`,
       calc: y => base * Math.pow(1.15, y) },
     { label:'기본', color:'var(--primary)', bg:'var(--primary-light)', border:'#bfdbfe', icon:'📈',
-      desc:`연 +7% (S&P500 역사적 평균)`,
+      desc:`연 +7% · 배당 재투자 포함 총수익률 (S&P500 역사적 평균)`,
       calc: y => base * Math.pow(1.07, y) },
     { label:'폭락 후 회복', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
-      desc:`1년차 -30% 폭락 → 이후 연 +10% 회복`,
+      desc:`1년차 -30% 폭락 → 이후 연 +10% 회복 (배당 재투자 포함)`,
       calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1.10, y - 1) },
   ];
 
   const portScenarios = [
     { label:'포트폴리오 맞춤 (기본)', color:'var(--purple)', bg:'var(--purple-light)', border:'#ddd6fe', icon:'💼',
-      desc:`종목 비중 가중평균 예상 수익률 +${wPct}%/년`,
+      desc:`보유 종목 가중평균 +${wPct}%/년 · 배당 재투자 포함 총수익률`,
       calc: y => base * Math.pow(1 + weightedRate, y) },
     { label:'포트폴리오 맞춤 (보수적)', color:'var(--gray-600)', bg:'var(--gray-100)', border:'var(--gray-300)', icon:'🛡️',
-      desc:`가중평균의 60% 수준 +${(weightedRate*0.6*100).toFixed(1)}%/년`,
+      desc:`가중평균 60% 수준 +${(weightedRate*0.6*100).toFixed(1)}%/년 · 배당 재투자 포함`,
       calc: y => base * Math.pow(1 + weightedRate * 0.6, y) },
     { label:'포트폴리오 맞춤 (폭락 후)', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
-      desc:`1년차 -30% 폭락 → 이후 +${wPct}%/년 회복`,
+      desc:`1년차 -30% 폭락 → 이후 +${wPct}%/년 회복 · 배당 재투자 포함`,
       calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1 + weightedRate, y - 1) },
   ];
 
@@ -1805,7 +1808,9 @@ function renderProjection() {
 
   el.innerHTML = `
     <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px 16px;margin-bottom:4px;font-size:12px;color:var(--gray-600)">
-      현재 포트폴리오 평가금액: <strong style="color:var(--gray-900);font-size:14px">${fmt(base)}</strong>원 기준 · 현재 누적 수익률 <strong style="color:var(--success)">+${portPct}%</strong> · 월 추가납입 미포함
+      기준 금액: <strong style="color:var(--gray-900);font-size:14px">${fmt(base)}</strong>원
+      ${stockBase ? `· 누적 수익률 <strong style="color:var(--success)">+${(cost>0?profit/cost*100:0).toFixed(1)}%</strong>` : '· 월별 투자금 기준'}
+      · 월 추가납입 미포함 · 배당 재투자 포함
     </div>
 
     ${sectionTitle('📊', '시장 시나리오', 'S&P500·역사적 수익률 기반 고정 가정치')}
@@ -1819,7 +1824,7 @@ function renderProjection() {
       ${renderScenarios(portScenarios)}
     </div>
 
-    <div style="margin-top:14px;font-size:11px;color:var(--gray-400)">※ 세금·수수료·환율 변동 미반영. 포트폴리오 시나리오는 종목 카테고리별 역사적 기대수익률을 보유 비중으로 가중평균한 참고치입니다.</div>`;
+    <div style="margin-top:14px;font-size:11px;color:var(--gray-400)">※ 모든 시나리오는 <strong>배당 재투자 포함 총수익률</strong> 기준입니다. 세금·수수료·환율 변동 미반영. 포트폴리오 시나리오는 종목 카테고리별 역사적 기대수익률을 보유 비중으로 가중평균한 참고치입니다.</div>`;
 }
 
 function renderStockSummary() {
