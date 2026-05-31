@@ -1900,8 +1900,8 @@ async function fetchKrMarketData(btn) {
       const meta = res?.meta;
       if (!meta) return null;
       const price = meta.regularMarketPrice;
-      const prev  = meta.chartPreviousClose || meta.previousClose;
-      const chgPct = prev ? (price - prev) / prev * 100 : 0;
+      const prev  = meta.regularMarketPreviousClose || meta.previousClose;
+      const chgPct = meta.regularMarketChangePercent ?? (prev ? (price - prev) / prev * 100 : 0);
       const closes = res?.indicators?.quote?.[0]?.close?.filter(Boolean) || [];
       return {
         symbol: sym,
