@@ -2674,17 +2674,19 @@ function copyPortfolioForClaude() {
   ];
 
   const text = lines.join('\n');
+  const openClaude = () => window.open('https://claude.ai', '_blank');
   navigator.clipboard.writeText(text).then(() => {
-    toast('복사됨! 채팅창에 붙여넣으세요 (Ctrl+V)', 'success');
+    toast('복사 완료! claude.ai가 열립니다 — 붙여넣기(Ctrl+V)하세요', 'success');
+    openClaude();
   }).catch(() => {
-    // 클립보드 실패 시 모달로 표시
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:300px;z-index:9999;padding:12px;border:2px solid var(--primary);border-radius:8px;font-size:12px';
     document.body.appendChild(ta);
     ta.select();
-    toast('Ctrl+A → Ctrl+C 로 복사 후 채팅창에 붙여넣으세요', 'info');
+    toast('Ctrl+A → Ctrl+C 로 복사 후 claude.ai에 붙여넣으세요', 'info');
     setTimeout(() => ta.remove(), 15000);
+    openClaude();
   });
 }
 
