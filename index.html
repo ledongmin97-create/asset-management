@@ -354,6 +354,7 @@
         <button class="tab-btn" data-tab="annual"  onclick="switchTab('annual')">📊 연간현황</button>
         <button class="tab-btn" data-tab="stocks"  onclick="switchTab('stocks')">📈 주식현황</button>
         <button class="tab-btn" data-tab="usmarket" onclick="switchTab('usmarket')">🇺🇸 미국시장</button>
+        <button class="tab-btn" data-tab="krmarket" onclick="switchTab('krmarket')">🇰🇷 한국시장</button>
       </div>
       <div class="tab-actions" id="tabActions"></div>
     </div>
@@ -927,6 +928,39 @@
         </div>
       </div>
     </div>
+
+    <!-- KR MARKET -->
+    <div class="tab-pane" id="pane-krmarket">
+      <div class="us-charts-grid">
+        <div class="us-chart-card">
+          <div class="us-chart-title">KOSPI 200 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(KODEX 200)</span></div>
+          <div id="kr_kospi" style="height:180px;width:100%"></div>
+        </div>
+        <div class="us-chart-card">
+          <div class="us-chart-title">KOSDAQ 150 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(KODEX KOSDAQ150)</span></div>
+          <div id="kr_kosdaq" style="height:180px;width:100%"></div>
+        </div>
+        <div class="us-chart-card">
+          <div class="us-chart-title">삼성전자 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(005930)</span></div>
+          <div id="kr_samsung" style="height:180px;width:100%"></div>
+        </div>
+        <div class="us-chart-card">
+          <div class="us-chart-title">SK하이닉스 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(000660)</span></div>
+          <div id="kr_hynix" style="height:180px;width:100%"></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">상세 차트</div>
+            <div class="chart-subtitle">TradingView 실시간 · 우측 상단에서 심볼 직접 변경 가능</div>
+          </div>
+        </div>
+        <div id="kr_main_chart" style="height:480px;width:100%"></div>
+      </div>
+    </div>
+
   </div>
 </main>
 
@@ -1745,6 +1779,62 @@ function renderUsMarketTab() {
   if (ak) ak.value = localStorage.getItem('us_av_key') || '';
 }
 
+let krMarketInitialized = false;
+function renderKrMarketTab() {
+  if (krMarketInitialized) return;
+  krMarketInitialized = true;
+
+  const miniCharts = [
+    { id: 'kr_kospi',   symbol: 'KRX:069500' },
+    { id: 'kr_kosdaq',  symbol: 'KRX:229200' },
+    { id: 'kr_samsung', symbol: 'KRX:005930' },
+    { id: 'kr_hynix',   symbol: 'KRX:000660' },
+  ];
+  miniCharts.forEach(({ id, symbol }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const wd = document.createElement('div');
+    wd.className = 'tradingview-widget-container__widget';
+    el.appendChild(wd);
+    const s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+    s.async = true;
+    s.textContent = JSON.stringify({
+      symbol, width: '100%', height: 180, locale: 'ko',
+      dateRange: '12M', colorTheme: 'light', isTransparent: false,
+      trendLineColor: '#16a34a', underLineColor: 'rgba(22,163,74,0.1)'
+    });
+    el.appendChild(s);
+  });
+
+  const main = document.getElementById('kr_main_chart');
+  if (main) {
+    const wd = document.createElement('div');
+    wd.className = 'tradingview-widget-container__widget';
+    wd.style.height = '100%';
+    main.appendChild(wd);
+    const s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+    s.async = true;
+    s.textContent = JSON.stringify({
+      symbols: [
+        ['KOSPI 200 (069500)', 'KRX:069500|12M'],
+        ['KOSDAQ 150 (229200)', 'KRX:229200|12M'],
+        ['삼성전자 (005930)', 'KRX:005930|12M'],
+        ['SK하이닉스 (000660)', 'KRX:000660|12M'],
+      ],
+      chartOnly: false, width: '100%', height: 480, locale: 'ko',
+      colorTheme: 'light', autosize: false, showVolume: false,
+      hideDateRanges: false, scalePosition: 'right', scaleMode: 'Normal',
+      lineWidth: 2, lineType: 0, chartType: 'area',
+      dateRanges: ['1d|1','1m|30','3m|60','12m|1D','60m|1W','all|1M']
+    });
+    main.appendChild(s);
+  }
+}
+
 function toggleApiSettings() {
   const p = document.getElementById('usApiPanel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
@@ -1917,11 +2007,12 @@ async function runAiAnalysis() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-  ['monthly','annual','stocks','usmarket'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
+  ['monthly','annual','stocks','usmarket','krmarket'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
   renderTabActions();
   if (tab==='monthly')  renderMonthlyTable();
   if (tab==='stocks')   renderStocksTab();
   if (tab==='usmarket') renderUsMarketTab();
+  if (tab==='krmarket') renderKrMarketTab();
 }
 
 function renderTabActions() {
