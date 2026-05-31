@@ -1699,20 +1699,41 @@ function renderStocksTab() {
 function renderProjection() {
   const el = document.getElementById('projectionContent');
   if (!el) return;
-  const base = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const base   = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+  const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
   if (!base) {
     el.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:20px 0;text-align:center">주식 데이터를 먼저 불러와주세요.</div>';
     return;
   }
 
   const years = [1, 3, 5, 10];
-  const scenarios = [
-    { key:'bull',  label:'낙관', color:'var(--success)', bg:'var(--success-light)', border:'#bbf7d0', icon:'🚀', desc:'연 +15% (AI·반도체 슈퍼사이클 지속)',
+  const portRate = cost > 0 ? profit / cost : 0; // 현재 누적 수익률 (소수)
+  const portPct  = (portRate * 100).toFixed(1);
+  const portHalf = portRate / 2;
+
+  const marketScenarios = [
+    { label:'낙관', color:'var(--success)', bg:'var(--success-light)', border:'#bbf7d0', icon:'🚀',
+      desc:`연 +15% (AI·반도체 슈퍼사이클 지속)`,
       calc: y => base * Math.pow(1.15, y) },
-    { key:'base',  label:'기본', color:'var(--primary)', bg:'var(--primary-light)', border:'#bfdbfe', icon:'📈', desc:'연 +7% (S&P500 역사적 평균)',
+    { label:'기본', color:'var(--primary)', bg:'var(--primary-light)', border:'#bfdbfe', icon:'📈',
+      desc:`연 +7% (S&P500 역사적 평균)`,
       calc: y => base * Math.pow(1.07, y) },
-    { key:'crash', label:'폭락 후 회복', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️', desc:'1년차 -30% 폭락 → 이후 연 +10% 회복',
+    { label:'폭락 후 회복', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
+      desc:`1년차 -30% 폭락 → 이후 연 +10% 회복`,
       calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1.10, y - 1) },
+  ];
+
+  const portScenarios = [
+    { label:'현재 추세 유지', color:'var(--purple)', bg:'var(--purple-light)', border:'#ddd6fe', icon:'💼',
+      desc:`현재 수익률 +${portPct}%/년 유지 가정`,
+      calc: y => base * Math.pow(1 + portRate, y) },
+    { label:'보수적', color:'var(--gray-600)', bg:'var(--gray-100)', border:'var(--gray-300)', icon:'🛡️',
+      desc:`현재 수익률 절반 +${(portRate/2*100).toFixed(1)}%/년 가정`,
+      calc: y => base * Math.pow(1 + portHalf, y) },
+    { label:'폭락 후 현재 추세', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
+      desc:`1년차 -30% 폭락 → 이후 +${portPct}%/년 회복`,
+      calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1 + portRate, y - 1) },
   ];
 
   const fmt = v => {
@@ -1720,37 +1741,55 @@ function renderProjection() {
     return Math.round(v/1e4).toLocaleString('ko-KR')+'만';
   };
   const delta = (v, b) => {
-    const d = v - b; const pct = (d/b*100).toFixed(0);
+    const d = v - b; const p = (d/b*100).toFixed(0);
     return d >= 0
-      ? `<span style="color:var(--success);font-size:11px">+${fmt(d)} (+${pct}%)</span>`
-      : `<span style="color:var(--danger);font-size:11px">${fmt(d)} (${pct}%)</span>`;
+      ? `<span style="color:var(--success);font-size:11px">+${fmt(d)} (+${p}%)</span>`
+      : `<span style="color:var(--danger);font-size:11px">${fmt(d)} (${p}%)</span>`;
   };
+  const renderScenarios = list => list.map(sc=>`
+    <div style="border:1px solid ${sc.border};border-radius:12px;overflow:hidden">
+      <div style="background:${sc.bg};padding:12px 16px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">${sc.icon}</span>
+        <div>
+          <span style="font-size:13px;font-weight:700;color:${sc.color}">${sc.label}</span>
+          <span style="font-size:11px;color:var(--gray-500);margin-left:8px">${sc.desc}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">
+        ${years.map((y,i)=>`
+          <div style="padding:14px 16px;${i<years.length-1?'border-right:1px solid var(--gray-100)':''}">
+            <div style="font-size:10px;font-weight:700;color:var(--gray-400);margin-bottom:4px">${y}년 후</div>
+            <div style="font-size:16px;font-weight:800;color:var(--gray-900)">${fmt(sc.calc(y))}</div>
+            <div style="margin-top:3px">${delta(sc.calc(y), base)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const sectionTitle = (icon, title, sub) => `
+    <div style="display:flex;align-items:center;gap:8px;margin:20px 0 12px">
+      <span style="font-size:15px">${icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--gray-800)">${title}</div>
+        <div style="font-size:11px;color:var(--gray-400)">${sub}</div>
+      </div>
+    </div>`;
 
   el.innerHTML = `
-    <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--gray-600)">
-      현재 포트폴리오 평가금액: <strong style="color:var(--gray-900);font-size:14px">${fmt(base)}</strong>원을 기준으로 계산합니다. 월 추가납입 미포함, 참고용입니다.
+    <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:12px 16px;margin-bottom:4px;font-size:12px;color:var(--gray-600)">
+      현재 포트폴리오 평가금액: <strong style="color:var(--gray-900);font-size:14px">${fmt(base)}</strong>원 기준 · 현재 누적 수익률 <strong style="color:var(--success)">+${portPct}%</strong> · 월 추가납입 미포함
     </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      ${scenarios.map(sc=>`
-        <div style="border:1px solid ${sc.border};border-radius:12px;overflow:hidden">
-          <div style="background:${sc.bg};padding:12px 16px;display:flex;align-items:center;gap:8px">
-            <span style="font-size:16px">${sc.icon}</span>
-            <div>
-              <span style="font-size:13px;font-weight:700;color:${sc.color}">${sc.label} 시나리오</span>
-              <span style="font-size:11px;color:var(--gray-500);margin-left:8px">${sc.desc}</span>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">
-            ${years.map((y,i)=>`
-              <div style="padding:14px 16px;${i<years.length-1?'border-right:1px solid var(--gray-100)':''}">
-                <div style="font-size:10px;font-weight:700;color:var(--gray-400);margin-bottom:4px">${y}년 후</div>
-                <div style="font-size:16px;font-weight:800;color:var(--gray-900)">${fmt(sc.calc(y))}</div>
-                <div style="margin-top:3px">${delta(sc.calc(y), base)}</div>
-              </div>`).join('')}
-          </div>
-        </div>`).join('')}
+
+    ${sectionTitle('📊', '시장 시나리오', 'S&P500·역사적 수익률 기반 고정 가정치')}
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${renderScenarios(marketScenarios)}
     </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--gray-400)">※ 세금·수수료·환율 변동 미반영. 과거 수익률이 미래를 보장하지 않습니다.</div>`;
+
+    ${sectionTitle('💼', '포트폴리오 시나리오', `내 포트폴리오 현재 수익률(+${portPct}%) 기반 — 연환산 아닌 현재 누적률 적용, 참고용`)}
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${renderScenarios(portScenarios)}
+    </div>
+
+    <div style="margin-top:14px;font-size:11px;color:var(--gray-400)">※ 세금·수수료·환율 변동 미반영. 포트폴리오 시나리오는 현재 누적 수익률을 연율로 가정한 참고치입니다.</div>`;
 }
 
 function renderStockSummary() {
