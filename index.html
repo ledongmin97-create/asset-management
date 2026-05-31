@@ -410,8 +410,7 @@
             </div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="openAnthropicKeyModal()" title="Anthropic API 키 설정">🔑 API 키</button>
-            <button class="btn btn-primary btn-sm" id="aiAnalyzeBtn" onclick="analyzePortfolioWithAI()">🤖 AI 분석하기</button>
+            <button class="btn btn-outline btn-sm" onclick="copyPortfolioForClaude()">📋 Claude에게 보내기</button>
             <button class="btn btn-outline btn-sm" onclick="renderStocksTab()">🔄 새로고침</button>
           </div>
         </div>
@@ -1196,30 +1195,6 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
-
-<!-- Anthropic API 키 설정 -->
-<div class="overlay" id="anthropicKeyOverlay" onclick="if(event.target===this)closeModal('anthropicKeyOverlay')">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-header">
-      <span class="modal-title">🔑 Anthropic API 키 설정</span>
-      <button class="modal-close" onclick="closeModal('anthropicKeyOverlay')">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.6">
-      <a href="https://console.anthropic.com" target="_blank" style="color:var(--primary)">console.anthropic.com</a>에서 발급한 API 키를 입력하세요.<br>
-      <span style="font-size:11px;color:var(--gray-400)">키는 이 브라우저에만 저장되며 외부로 전송되지 않습니다.</span>
-    </p>
-    <div class="form-group" style="margin-bottom:12px">
-      <label>API 키 (sk-ant-...)</label>
-      <input type="password" id="anthropicKeyInput" placeholder="sk-ant-api03-..."
-        style="width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
-    </div>
-    <div id="anthropicKeyStatus" style="font-size:12px;margin-bottom:8px"></div>
-    <div class="form-actions">
-      <button class="btn btn-outline" onclick="closeModal('anthropicKeyOverlay')">취소</button>
-      <button class="btn btn-primary" onclick="saveAnthropicKey()">저장</button>
-    </div>
-  </div>
-</div>
 
 <!-- 구글 시트 연결 -->
 <div class="overlay" id="sheetSetupOverlay" onclick="if(event.target===this)closeModal('sheetSetupOverlay')">
@@ -2861,92 +2836,6 @@ fbAuth.onAuthStateChanged(async (user) => {
     document.getElementById('adminBtn').style.display = 'none';
   }
 });
-
-// ── Anthropic API ──
-function openAnthropicKeyModal() {
-  const saved = localStorage.getItem('anthropic_key') || '';
-  document.getElementById('anthropicKeyInput').value = saved ? '••••••••' + saved.slice(-6) : '';
-  document.getElementById('anthropicKeyStatus').textContent = saved ? '✅ API 키가 저장되어 있습니다.' : '';
-  document.getElementById('anthropicKeyStatus').style.color = 'var(--success)';
-  document.getElementById('anthropicKeyOverlay').classList.add('open');
-}
-
-function saveAnthropicKey() {
-  const val = document.getElementById('anthropicKeyInput').value.trim();
-  if (!val || val.startsWith('••')) { closeModal('anthropicKeyOverlay'); return; }
-  if (!val.startsWith('sk-ant-')) {
-    document.getElementById('anthropicKeyStatus').textContent = '❌ 올바른 Anthropic API 키 형식이 아닙니다 (sk-ant-로 시작)';
-    document.getElementById('anthropicKeyStatus').style.color = 'var(--danger)';
-    return;
-  }
-  localStorage.setItem('anthropic_key', val);
-  toast('API 키가 저장되었습니다!', 'success');
-  closeModal('anthropicKeyOverlay');
-}
-
-async function analyzePortfolioWithAI() {
-  if (!stocks.length) { toast('먼저 구글 시트 동기화를 해주세요', 'error'); return; }
-  const apiKey = localStorage.getItem('anthropic_key');
-  if (!apiKey) { openAnthropicKeyModal(); toast('Anthropic API 키를 먼저 입력해주세요', 'info'); return; }
-
-  const btn = document.getElementById('aiAnalyzeBtn');
-  const contentEl = document.getElementById('portfolioAnalysisContent');
-  btn.disabled = true; btn.textContent = '분석 중...';
-
-  const total  = stocks.reduce((s,r) => s+(r.평가금액||0), 0);
-  const profit = stocks.reduce((s,r) => s+(r.수익금||0), 0);
-  const cost   = stocks.reduce((s,r) => s+(r.투자원금||0), 0);
-
-  const prompt = `다음은 내 주식 포트폴리오입니다. 종목별 진단, 비중 적절성, 리밸런싱 제안, 주의사항을 한국어로 분석해주세요.
-
-총 평가금액: ${w(total)} / 투자원금: ${w(cost)} / 수익금: ${w(profit)} / 수익률: ${cost>0?(profit/cost*100).toFixed(2):0}%
-환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD
-
---- 종목별 현황 ---
-${stocks.map(r => {
-  const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
-  return `${r.종목명} | ${r.카테고리||'-'} | ${r.계좌||'-'} | 수량 ${r.수량||'-'} | 현재가 ${r.현재가||'-'} | 평가금액 ${w(r.평가금액)} (비중 ${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
-}).join('\n')}
-
-분석 항목: 1) 전체 총평 2) 종목별 진단표 (유지/축소/추가매수/정리 판단 + 이유) 3) 리밸런싱 제안 4) 현재 주의사항`;
-
-  contentEl.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gray-400)"><div class="spinner"></div> Claude가 포트폴리오를 분석 중입니다...</div>`;
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    const text = data.content?.[0]?.text || '';
-    contentEl.innerHTML = `
-      <div class="ai-result">${marked.parse(text)}</div>
-      <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:10px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-        <span>🤖 Claude AI 실시간 분석 · 투자 손실 책임 없음</span>
-        <span>분석 시각: ${new Date().toLocaleString('ko-KR')}</span>
-      </div>`;
-    toast('AI 분석 완료!', 'success');
-  } catch(e) {
-    contentEl.innerHTML = `<div style="background:var(--danger-light);border:1px solid #fecaca;border-radius:10px;padding:16px;font-size:13px;color:var(--danger)">
-      <strong>오류:</strong> ${e.message}<br><br>
-      <small>• API 키가 올바른지 확인해주세요<br>• API 크레딧이 남아있는지 확인해주세요</small>
-    </div>`;
-    toast('분석 실패: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = '🤖 AI 분석하기';
-  }
-}
 
 // ── 구글 시트 설정 ──
 function openSheetSetup() {
