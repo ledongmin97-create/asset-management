@@ -1881,17 +1881,28 @@ async function fetchKrMarketData(btn) {
   const syms = ['^KS11','^KQ11','005930.KS','000660.KS','KRW=X'];
   try {
     const proxy = 'https://corsproxy.io/?';
-    const fields = 'shortName,regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow';
-    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(syms.join(','))}&fields=${fields}`;
-    const r = await fetch(proxy + encodeURIComponent(url));
-    const d = await r.json();
-    const results = d?.quoteResponse?.result || d?.finance?.result || [];
-    if (!results.length) {
-      const errMsg = d?.quoteResponse?.error?.description || d?.finance?.error?.description || JSON.stringify(d).slice(0,200);
-      throw new Error('응답 오류: ' + errMsg);
-    }
+    const fetchChart = async (sym) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+      const r = await fetch(proxy + encodeURIComponent(url));
+      const d = await r.json();
+      const meta = d?.chart?.result?.[0]?.meta;
+      if (!meta) return null;
+      const price = meta.regularMarketPrice;
+      const prev  = meta.chartPreviousClose || meta.previousClose;
+      const chgPct = prev ? (price - prev) / prev * 100 : 0;
+      return {
+        symbol: sym,
+        shortName: meta.longName || meta.shortName || sym,
+        regularMarketPrice: price,
+        regularMarketChangePercent: chgPct,
+        regularMarketChange: price - (prev||price),
+        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+        fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+      };
+    };
+    const results = await Promise.all(syms.map(fetchChart));
     const quotes = {};
-    results.forEach(q => { quotes[q.symbol] = q; });
+    results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
 
     const fmt  = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
