@@ -999,44 +999,101 @@
           </div>
         </div>
 
-        <!-- 섹터 전망 + 추천 종목 -->
+        <!-- 4카드 분석 그리드 (US마켓과 동일 구조) -->
         <div class="analysis-grid" style="margin-bottom:18px">
+
+          <!-- 추천 ETF -->
+          <div class="analysis-card">
+            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bfdbfe">📊 추천 ETF (장기 투자)</div>
+            <div class="pick-row">
+              <div class="pick-ticker">EWY</div>
+              <div class="pick-info"><div class="pick-name">iShares MSCI South Korea ETF</div><div class="pick-desc">KOSPI 전체 노출 — 삼성전자·SK하이닉스·현대차 상위 비중. 밸류업 수혜</div></div>
+              <span class="pick-badge badge-strong-buy">강력매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">069500</div>
+              <div class="pick-info"><div class="pick-name">KODEX 200</div><div class="pick-desc">KOSPI 200 직접 추종, 운용보수 0.15% — 한국 시장 코어 ETF</div></div>
+              <span class="pick-badge badge-strong-buy">강력매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">091160</div>
+              <div class="pick-info"><div class="pick-name">KODEX 반도체</div><div class="pick-desc">삼성전자·SK하이닉스·DB하이텍 집중, HBM 슈퍼사이클 수혜</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">305720</div>
+              <div class="pick-info"><div class="pick-name">KODEX 2차전지산업</div><div class="pick-desc">LG엔솔·삼성SDI·포스코퓨처엠 — 북미 IRA 수혜 2차전지 집중</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+          </div>
+
+          <!-- 추천 개별 종목 -->
+          <div class="analysis-card">
+            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #ddd6fe">🚀 추천 개별 종목</div>
+            <div class="pick-row">
+              <div class="pick-ticker" style="color:var(--success)">000660</div>
+              <div class="pick-info"><div class="pick-name">SK하이닉스</div><div class="pick-desc">HBM3E NVIDIA 독점 공급, AI 메모리 최대 수혜주 — 2026년 HBM4 본격 전환</div></div>
+              <span class="pick-badge badge-strong-buy">강력매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker" style="color:var(--success)">005930</div>
+              <div class="pick-info"><div class="pick-name">삼성전자</div><div class="pick-desc">HBM4 양산 준비, 파운드리 수주 회복세 — 저PBR 밸류업 최대 수혜주</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">373220</div>
+              <div class="pick-info"><div class="pick-name">LG에너지솔루션</div><div class="pick-desc">GM·스텔란티스 JV 풀가동, 북미 IRA 보조금 수혜 — 배터리 1위 수성</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+            <div class="pick-row">
+              <div class="pick-ticker">005380</div>
+              <div class="pick-info"><div class="pick-name">현대차</div><div class="pick-desc">밸류업 프로그램 최대 수혜, 미국 공장 전기차 현지화 — 저PBR 해소 기대</div></div>
+              <span class="pick-badge badge-buy">매수</span>
+            </div>
+          </div>
+
+          <!-- 섹터 전망 (별점) -->
           <div class="analysis-card">
             <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bbf7d0">🏭 섹터 전망</div>
-            <div class="sector-row"><span class="sector-name">💾 반도체 (HBM·AI메모리)</span><span class="sector-rating rating-strong">매우 강세</span></div>
-            <div class="sector-row"><span class="sector-name">🔋 2차전지·배터리</span><span class="sector-rating rating-positive">강세</span></div>
-            <div class="sector-row"><span class="sector-name">🏦 금융·지주 (밸류업)</span><span class="sector-rating rating-positive">강세</span></div>
-            <div class="sector-row"><span class="sector-name">💊 바이오·제약</span><span class="sector-rating rating-neutral">중립</span></div>
-            <div class="sector-row"><span class="sector-name">🛒 소비재·유통</span><span class="sector-rating rating-neutral">중립</span></div>
-            <div class="sector-row"><span class="sector-name">🏠 부동산·건설</span><span class="sector-rating rating-negative">약세</span></div>
+            <div class="sector-row"><span class="sector-name">💾 반도체 (HBM·AI메모리)</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★★★★</span><span class="sector-rating rating-strong">매우 강세</span></div></div>
+            <div class="sector-row"><span class="sector-name">🔋 2차전지·배터리</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★★★☆</span><span class="sector-rating rating-positive">강세</span></div></div>
+            <div class="sector-row"><span class="sector-name">🏦 금융·지주 (밸류업)</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★★★☆</span><span class="sector-rating rating-positive">강세</span></div></div>
+            <div class="sector-row"><span class="sector-name">🚗 자동차 (전기차)</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★★☆☆</span><span class="sector-rating rating-neutral">중립</span></div></div>
+            <div class="sector-row"><span class="sector-name">💊 바이오·제약</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★★☆☆</span><span class="sector-rating rating-neutral">중립</span></div></div>
+            <div class="sector-row"><span class="sector-name">🛒 소비재·내수</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★☆☆☆</span><span class="sector-rating rating-negative">약세</span></div></div>
+            <div class="sector-row"><span class="sector-name">🏠 부동산·건설</span><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:#f59e0b">★★☆☆☆</span><span class="sector-rating rating-negative">약세</span></div></div>
           </div>
+
+          <!-- 리스크 요인 -->
           <div class="analysis-card">
-            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #bfdbfe">⭐ 주목 종목</div>
-            <div class="pick-row"><div class="pick-ticker">000660</div><div class="pick-info"><div class="pick-name">SK하이닉스</div><div class="pick-desc">HBM3E NVIDIA 독점공급, AI 메모리 최대 수혜주</div></div><span class="pick-badge badge-strong-buy">강력매수</span></div>
-            <div class="pick-row"><div class="pick-ticker">005930</div><div class="pick-info"><div class="pick-name">삼성전자</div><div class="pick-desc">HBM4 양산 준비, 파운드리 수주 회복세, 저평가</div></div><span class="pick-badge badge-buy">매수</span></div>
-            <div class="pick-row"><div class="pick-ticker">373220</div><div class="pick-info"><div class="pick-name">LG에너지솔루션</div><div class="pick-desc">북미 IRA 수혜, GM·스텔란티스 JV 공장 풀가동</div></div><span class="pick-badge badge-buy">매수</span></div>
-            <div class="pick-row"><div class="pick-ticker">EWY</div><div class="pick-info"><div class="pick-name">iShares Korea ETF</div><div class="pick-desc">KOSPI 전체 노출, 밸류업 정책 수혜</div></div><span class="pick-badge badge-income">분산투자</span></div>
+            <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #fed7aa">⚠️ 주요 리스크 요인</div>
+            <div class="risk-row">
+              <div class="risk-icon">🇺🇸</div>
+              <div class="risk-info"><div class="risk-title">미국 반도체 수출 규제</div><div class="risk-desc">대중(對中) 제재 강화 시 삼성·SK하이닉스 수출 제한 직접 타격</div></div>
+              <span class="risk-level risk-high">높음</span>
+            </div>
+            <div class="risk-row">
+              <div class="risk-icon">💱</div>
+              <div class="risk-info"><div class="risk-title">원/달러 1,500원대 고착</div><div class="risk-desc">환율 급등으로 수입물가 상승, 내수·소비주 실적 압박 지속</div></div>
+              <span class="risk-level risk-high">높음</span>
+            </div>
+            <div class="risk-row">
+              <div class="risk-icon">🇨🇳</div>
+              <div class="risk-info"><div class="risk-title">중국 경쟁 심화</div><div class="risk-desc">CATL 저가 배터리·화웨이 반도체 추격으로 한국 기업 점유율 압박</div></div>
+              <span class="risk-level risk-medium">중간</span>
+            </div>
+            <div class="risk-row">
+              <div class="risk-icon">🏛️</div>
+              <div class="risk-info"><div class="risk-title">정치·정책 불확실성</div><div class="risk-desc">국내 정치 리스크 및 대선 전후 규제·세제 정책 변동 가능성</div></div>
+              <span class="risk-level risk-medium">중간</span>
+            </div>
+            <div class="risk-row">
+              <div class="risk-icon">📈</div>
+              <div class="risk-info"><div class="risk-title">고금리 장기화</div><div class="risk-desc">한국은행 동결 기조 — 부동산·건설·중소 금융사 부실 리스크</div></div>
+              <span class="risk-level risk-medium">중간</span>
+            </div>
           </div>
-        </div>
 
-        <!-- 현재 주의사항 -->
-        <div style="background:var(--warning-light);border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:18px">
-          <div style="font-size:12px;font-weight:700;color:var(--warning);margin-bottom:10px">⚠️ 현재 주의사항</div>
-          <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--gray-700);line-height:1.5">
-            <div>• <strong>원/달러 1,500원대 고착화</strong> — 환율 급등으로 수입물가 상승, 소비주·내수주 실적 압박 지속</div>
-            <div>• <strong>고금리 장기화</strong> — 한국은행 기준금리 동결 기조, 부동산·건설·금융 섹터 부실 리스크 상존</div>
-            <div>• <strong>반도체 수출 규제 확대 가능성</strong> — 미국 대중(對中) 반도체 제재 강화 시 삼성·SK하이닉스 수출 제한 타격</div>
-            <div>• <strong>중국산 저가 배터리 공세</strong> — LG에너지솔루션·삼성SDI, CATL 저가 경쟁으로 유럽 수주 압박</div>
-          </div>
-        </div>
-
-        <!-- 리스크 -->
-        <div class="analysis-card" style="margin-bottom:0">
-          <div style="font-size:13px;font-weight:700;color:var(--gray-800);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #fecaca">🛡️ 리스크 레벨</div>
-          <div class="risk-row"><span class="risk-icon">🇺🇸</span><div class="risk-info"><div class="risk-title">미중 무역갈등</div><div class="risk-desc">반도체 수출 규제 확대 시 삼성·SK하이닉스 타격</div></div><span class="risk-level risk-high">높음</span></div>
-          <div class="risk-row"><span class="risk-icon">💱</span><div class="risk-info"><div class="risk-title">환율 변동성</div><div class="risk-desc">원/달러 1,500원대, 수출주 수혜 vs 수입물가 부담</div></div><span class="risk-level risk-medium">중간</span></div>
-          <div class="risk-row"><span class="risk-icon">🇨🇳</span><div class="risk-info"><div class="risk-title">중국 경쟁 심화</div><div class="risk-desc">중국 반도체·배터리 기업의 저가 공세</div></div><span class="risk-level risk-medium">중간</span></div>
-          <div class="risk-row"><span class="risk-icon">🏛️</span><div class="risk-info"><div class="risk-title">정치 불확실성</div><div class="risk-desc">국내 정치 리스크 및 대선 전후 정책 변동</div></div><span class="risk-level risk-medium">중간</span></div>
         </div>
         <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:12px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
           <span>🤖 Claude AI 분석 · 참고용, 투자 손실 책임 없음</span>
