@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>자산관리 대시보드</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
@@ -257,6 +260,36 @@
 </head>
 <body>
 
+<!-- 로그인 화면 -->
+<div id="loginOverlay" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:20px;padding:36px;width:92%;max-width:380px;box-shadow:0 25px 50px rgba(0,0,0,.5)">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">💰</div>
+      <h2 style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">자산관리 대시보드</h2>
+      <p style="font-size:12px;color:#94a3b8">개인 자산 관리 플랫폼</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:4px">아이디</label>
+        <input id="loginId" type="text" placeholder="아이디 입력" autocomplete="username"
+          style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#475569;display:block;margin-bottom:4px">비밀번호</label>
+        <input id="loginPw" type="password" placeholder="비밀번호 입력" autocomplete="current-password"
+          style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;outline:none;font-family:inherit;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="loginError" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:9px 12px;font-size:12px;color:#dc2626"></div>
+      <button onclick="doLogin()" id="loginBtn"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;font-family:inherit">
+        로그인
+      </button>
+    </div>
+  </div>
+</div>
+
 <header class="header">
   <div class="header-inner">
     <div class="header-brand">
@@ -272,6 +305,14 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         원본 시트
       </a>
+      <button id="adminBtn" class="btn btn-ghost" onclick="openAdminPanel()" style="display:none">
+        👑 관리자
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 10px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px">
+        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700" id="userAvatar">?</div>
+        <span style="font-size:13px;font-weight:600;color:var(--gray-700)" id="headerUsername">-</span>
+        <button onclick="doLogout()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:12px;padding:2px 4px;border-radius:4px" title="로그아웃">✕</button>
+      </div>
     </div>
   </div>
 </header>
@@ -963,6 +1004,33 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- 관리자 패널 -->
+<div class="overlay" id="adminOverlay" onclick="if(event.target===this)closeModal('adminOverlay')">
+  <div class="modal modal-wide" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title">👑 사용자 관리</span>
+      <button class="modal-close" onclick="closeModal('adminOverlay')">✕</button>
+    </div>
+    <div class="form-section-title">새 계정 만들기</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="form-group">
+        <label>아이디</label>
+        <input type="text" id="newUserId" placeholder="영문소문자, 숫자" style="width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+      </div>
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" id="newUserPw" placeholder="6자 이상" style="width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+      </div>
+    </div>
+    <div id="adminCreateError" style="display:none;font-size:12px;color:var(--danger);margin-bottom:8px"></div>
+    <button class="btn btn-primary btn-sm" onclick="adminCreateUser()">계정 생성</button>
+    <div class="form-section-title" style="margin-top:20px">가입된 사용자</div>
+    <div id="adminUserList" style="display:flex;flex-direction:column;gap:6px;min-height:60px">
+      <div style="color:var(--gray-400);font-size:13px">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 // CONSTANTS
@@ -998,10 +1066,12 @@ function load() {
   gasUrl  = localStorage.getItem('gas_url') || '';
 }
 function save() {
-  localStorage.setItem('asset_monthly_v2', JSON.stringify(monthly));
-  localStorage.setItem('asset_annual_v2',  JSON.stringify(annual));
-  localStorage.setItem('asset_stocks_v2',  JSON.stringify(stocks));
-  if (gasUrl) localStorage.setItem('gas_url', gasUrl);
+  if (currentUser) {
+    fbDb.collection('userData').doc(currentUser.uid).set({
+      monthly, annual, stocks, gasUrl,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1614,7 +1684,7 @@ function toggleApiSettings() {
 
 function saveUsApiKeys() {
   const ak = document.getElementById('usAvKey').value.trim();
-  if (ak) localStorage.setItem('us_av_key', ak);
+  if (ak) { localStorage.setItem('us_av_key', ak); }
   document.getElementById('usApiPanel').style.display = 'none';
   toast('API 키 저장됨', 'success');
 }
@@ -1831,7 +1901,7 @@ function saveGasUrl() {
     toast('올바른 Apps Script URL을 입력해주세요', 'error'); return;
   }
   gasUrl = url;
-  localStorage.setItem('gas_url', gasUrl);
+  save();
   document.getElementById('gasStatus').textContent = url ? '✅ 저장되었습니다! 종목 편집 시 시트에도 자동 반영됩니다.' : '⚠️ URL이 비워졌습니다.';
   renderTabActions();
   renderStockSummary();
@@ -2160,7 +2230,173 @@ const DEFAULT_ANNUAL=[
   {연도:'2056',현금:null,투자:null,부동산:null,대출:null,자산:null,순자산:null,금융자산:null,증감순자산:null,증감금융자산:null,목표:4565911888,시나리오대비:-4565911888},
 ];
 
-document.addEventListener('DOMContentLoaded', ()=>{ load(); render(); });
+// ══════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAC2BRyeqGAdAXjzZTN0bYo-pAiu-msyQU",
+  authDomain: "asset-management-ef4ec.firebaseapp.com",
+  projectId: "asset-management-ef4ec",
+  storageBucket: "asset-management-ef4ec.firebasestorage.app",
+  messagingSenderId: "424933996102",
+  appId: "1:424933996102:web:61e07326f42cdb7946bc47"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb   = firebase.firestore();
+
+let currentUser     = null;
+let currentUserMeta = null;
+
+function usernameToEmail(username) {
+  return `${username.toLowerCase()}@asset-mgmt.local`;
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginId').value.trim();
+  const password = document.getElementById('loginPw').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  if (!username || !password) { showLoginError('아이디와 비밀번호를 입력해주세요'); return; }
+  btn.textContent = '로그인 중...'; btn.disabled = true;
+  errEl.style.display = 'none';
+  try {
+    await fbAuth.signInWithEmailAndPassword(usernameToEmail(username), password);
+  } catch(e) {
+    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+      ? '아이디 또는 비밀번호가 올바르지 않습니다'
+      : '로그인 오류: ' + e.message;
+    showLoginError(msg);
+    btn.textContent = '로그인'; btn.disabled = false;
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function doLogout() {
+  await fbAuth.signOut();
+}
+
+async function loadFromFirestore() {
+  const snap = await fbDb.collection('userData').doc(currentUser.uid).get();
+  if (snap.exists) {
+    const d = snap.data();
+    monthly = d.monthly || JSON.parse(JSON.stringify(DEFAULT_MONTHLY));
+    annual  = d.annual  || JSON.parse(JSON.stringify(DEFAULT_ANNUAL));
+    stocks  = d.stocks  || [];
+    gasUrl  = d.gasUrl  || '';
+  } else {
+    monthly = JSON.parse(JSON.stringify(DEFAULT_MONTHLY));
+    annual  = JSON.parse(JSON.stringify(DEFAULT_ANNUAL));
+    stocks  = [];
+    gasUrl  = '';
+  }
+}
+
+fbAuth.onAuthStateChanged(async (user) => {
+  if (user) {
+    currentUser = user;
+    const metaSnap = await fbDb.collection('users').doc(user.uid).get();
+    currentUserMeta = metaSnap.exists ? metaSnap.data() : { username: user.email.split('@')[0], role: 'user' };
+    const uname = currentUserMeta.username || user.email.split('@')[0];
+    document.getElementById('headerUsername').textContent = uname;
+    document.getElementById('userAvatar').textContent = uname.slice(0,2).toUpperCase();
+    if (currentUserMeta.role === 'admin') {
+      document.getElementById('adminBtn').style.display = '';
+    }
+    document.getElementById('loginOverlay').style.display = 'none';
+    await loadFromFirestore();
+    render();
+  } else {
+    currentUser = null; currentUserMeta = null;
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('loginBtn').textContent = '로그인';
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('adminBtn').style.display = 'none';
+  }
+});
+
+// ── 관리자 패널 ──
+async function openAdminPanel() {
+  closeModal && closeModal('adminOverlay');
+  document.getElementById('adminOverlay').classList.add('open');
+  await refreshAdminUserList();
+}
+
+async function refreshAdminUserList() {
+  const el = document.getElementById('adminUserList');
+  el.innerHTML = '<div style="color:var(--gray-400);font-size:13px">불러오는 중...</div>';
+  try {
+    const snap = await fbDb.collection('users').get();
+    if (snap.empty) { el.innerHTML = '<div style="color:var(--gray-400);font-size:13px">사용자 없음</div>'; return; }
+    el.innerHTML = snap.docs.map(d => {
+      const u = d.data();
+      const isMe = d.id === currentUser.uid;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200)">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;flex-shrink:0">
+          ${(u.username||'?').slice(0,2).toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--gray-900)">${u.username||'-'}</div>
+          <div style="font-size:11px;color:var(--gray-400)">${u.role==='admin'?'👑 관리자':'일반 사용자'} · 가입 ${u.createdAt?.toDate?.()?.toLocaleDateString('ko-KR')||'-'}</div>
+        </div>
+        ${!isMe ? `<button onclick="adminDeleteUser('${d.id}','${u.username}')" class="btn btn-danger-soft btn-sm">삭제</button>` : '<span style="font-size:11px;color:var(--gray-400)">나</span>'}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--danger);font-size:12px">오류: ${e.message}</div>`;
+  }
+}
+
+async function adminCreateUser() {
+  const username = document.getElementById('newUserId').value.trim().toLowerCase();
+  const password = document.getElementById('newUserPw').value;
+  const errEl    = document.getElementById('adminCreateError');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent='아이디와 비밀번호를 입력하세요'; errEl.style.display='block'; return; }
+  if (password.length < 6) { errEl.textContent='비밀번호는 6자 이상이어야 합니다'; errEl.style.display='block'; return; }
+  try {
+    const resp = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: usernameToEmail(username), password, returnSecureToken: false }) }
+    );
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message === 'EMAIL_EXISTS' ? '이미 존재하는 아이디입니다' : data.error.message);
+    await fbDb.collection('users').doc(data.localId).set({
+      username, role: 'user',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await fbDb.collection('userData').doc(data.localId).set({
+      monthly: JSON.parse(JSON.stringify(DEFAULT_MONTHLY)),
+      annual:  JSON.parse(JSON.stringify(DEFAULT_ANNUAL)),
+      stocks: [], gasUrl: ''
+    });
+    document.getElementById('newUserId').value = '';
+    document.getElementById('newUserPw').value = '';
+    toast(`${username} 계정이 생성되었습니다!`, 'success');
+    await refreshAdminUserList();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+  }
+}
+
+async function adminDeleteUser(uid, username) {
+  if (!confirm(`'${username}' 계정을 삭제하시겠습니까?\n데이터도 함께 삭제됩니다.`)) return;
+  try {
+    await fbDb.collection('users').doc(uid).delete();
+    await fbDb.collection('userData').doc(uid).delete();
+    toast(`${username} 계정 데이터가 삭제되었습니다`, 'info');
+    await refreshAdminUserList();
+  } catch(e) {
+    toast('삭제 오류: ' + e.message, 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { /* 로그인 후 onAuthStateChanged 에서 render */ });
 </script>
 </body>
 </html>
