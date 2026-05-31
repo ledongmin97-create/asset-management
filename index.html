@@ -1899,10 +1899,14 @@ async function fetchKrMarketData(btn) {
       const res  = d?.chart?.result?.[0];
       const meta = res?.meta;
       if (!meta) return null;
-      const price = meta.regularMarketPrice;
-      const prev  = meta.regularMarketPreviousClose || meta.previousClose;
-      const chgPct = meta.regularMarketChangePercent ?? (prev ? (price - prev) / prev * 100 : 0);
-      const closes = res?.indicators?.quote?.[0]?.close?.filter(Boolean) || [];
+      const price  = meta.regularMarketPrice;
+      const closes = res?.indicators?.quote?.[0]?.close?.filter(c => c != null) || [];
+      const last   = closes[closes.length - 1];
+      const prev   = closes[closes.length - 2];
+      const isLive = last && Math.abs(price - last) / last > 0.0005;
+      const chgNum = isLive ? price - last : (last && prev ? last - prev : 0);
+      const chgBase= isLive ? last : prev;
+      const chgPct = chgBase ? chgNum / chgBase * 100 : 0;
       return {
         symbol: sym,
         shortName: meta.longName || meta.shortName || sym,
