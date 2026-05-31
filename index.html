@@ -2416,8 +2416,22 @@ async function saveSheetId() {
 
 function applyUserUI() {
   const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
-  const analysisEl = document.getElementById('portfolioAnalysisSection');
-  if (analysisEl) analysisEl.style.display = isOwner ? '' : 'none';
+  // 포트폴리오 분석 하드코딩 내용 — 소유자만 표시, 나머지는 안내 메시지
+  const contentEl = document.getElementById('portfolioAnalysisContent');
+  if (contentEl) {
+    if (!isOwner) {
+      contentEl.innerHTML = `
+        <div style="text-align:center;padding:32px 20px;color:var(--gray-400)">
+          <div style="font-size:36px;margin-bottom:12px">🤖</div>
+          <div style="font-size:14px;font-weight:600;color:var(--gray-600);margin-bottom:8px">포트폴리오 AI 분석</div>
+          <div style="font-size:13px;line-height:1.7;margin-bottom:16px">
+            구글 시트 동기화 후 <strong>📋 Claude에게 보내기</strong>를 눌러<br>
+            본인 포트폴리오 기준 AI 분석을 받아보세요.
+          </div>
+        </div>`;
+    }
+  }
+  // 원본 시트 링크 — 소유자만 표시
   const sheetLink = document.querySelector('a[href*="spreadsheets"]');
   if (sheetLink) sheetLink.style.display = isOwner ? '' : 'none';
 }
