@@ -544,19 +544,19 @@
 
       <div class="us-charts-grid">
         <div class="us-chart-card">
-          <div class="us-chart-title">S&amp;P 500 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SPX)</span></div>
+          <div class="us-chart-title">S&amp;P 500 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(SPY)</span></div>
           <div id="tv_spx" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">Nasdaq 100 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(NDX)</span></div>
+          <div class="us-chart-title">Nasdaq 100 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(QQQ)</span></div>
           <div id="tv_ndx" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">Dow Jones <span style="font-size:11px;color:var(--gray-400);font-weight:400">(DJIA)</span></div>
+          <div class="us-chart-title">Dow Jones <span style="font-size:11px;color:var(--gray-400);font-weight:400">(DIA)</span></div>
           <div id="tv_dji" style="height:180px;width:100%"></div>
         </div>
         <div class="us-chart-card">
-          <div class="us-chart-title">Russell 2000 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(RUT)</span></div>
+          <div class="us-chart-title">Russell 2000 <span style="font-size:11px;color:var(--gray-400);font-weight:400">(IWM)</span></div>
           <div id="tv_rut" style="height:180px;width:100%"></div>
         </div>
       </div>
@@ -1558,10 +1558,10 @@ function renderUsMarketTab() {
   usMarketInitialized = true;
 
   const miniCharts = [
-    { id: 'tv_spx', symbol: 'SP:SPX' },
-    { id: 'tv_ndx', symbol: 'NASDAQ:NDX' },
-    { id: 'tv_dji', symbol: 'DJ:DJI' },
-    { id: 'tv_rut', symbol: 'TVC:RUT' },
+    { id: 'tv_spx', symbol: 'AMEX:SPY' },
+    { id: 'tv_ndx', symbol: 'NASDAQ:QQQ' },
+    { id: 'tv_dji', symbol: 'AMEX:DIA' },
+    { id: 'tv_rut', symbol: 'AMEX:IWM' },
   ];
   miniCharts.forEach(({ id, symbol }) => {
     const el = document.getElementById(id);
@@ -1592,7 +1592,7 @@ function renderUsMarketTab() {
     s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
     s.async = true;
     s.textContent = JSON.stringify({
-      symbols: [['S&P 500','SP:SPX|12M'],['Nasdaq 100','NASDAQ:NDX|12M'],['Dow Jones','DJ:DJI|12M']],
+      symbols: [['S&P 500 (SPY)','AMEX:SPY|12M'],['Nasdaq 100 (QQQ)','NASDAQ:QQQ|12M'],['Dow Jones (DIA)','AMEX:DIA|12M']],
       chartOnly: false, width: '100%', height: 480, locale: 'ko',
       colorTheme: 'light', autosize: false, showVolume: false,
       hideDateRanges: false, scalePosition: 'right', scaleMode: 'Normal',
