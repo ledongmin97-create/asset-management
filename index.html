@@ -2417,7 +2417,10 @@ async function refreshAdminUserList() {
           <div style="font-size:13px;font-weight:600;color:var(--gray-900)">${u.username||'-'}</div>
           <div style="font-size:11px;color:var(--gray-400)">${u.role==='admin'?'👑 관리자':'일반 사용자'} · 가입 ${u.createdAt?.toDate?.()?.toLocaleDateString('ko-KR')||'-'}</div>
         </div>
-        ${!isMe ? `<button onclick="adminDeleteUser('${d.id}','${u.username}')" class="btn btn-danger-soft btn-sm">삭제</button>` : '<span style="font-size:11px;color:var(--gray-400)">나</span>'}
+        ${!isMe ? `
+          <button onclick="adminResetData('${d.id}','${u.username}')" class="btn btn-outline btn-sm">초기화</button>
+          <button onclick="adminDeleteUser('${d.id}','${u.username}')" class="btn btn-danger-soft btn-sm">삭제</button>
+        ` : '<span style="font-size:11px;color:var(--gray-400)">나</span>'}
       </div>`;
     }).join('');
   } catch(e) {
@@ -2453,6 +2456,19 @@ async function adminCreateUser() {
     await refreshAdminUserList();
   } catch(e) {
     errEl.textContent = e.message; errEl.style.display = 'block';
+  }
+}
+
+async function adminResetData(uid, username) {
+  if (!confirm(`'${username}' 계정의 모든 데이터를 초기화하시겠습니까?`)) return;
+  try {
+    await fbDb.collection('userData').doc(uid).set({
+      monthly: [], annual: [], stocks: [], gasUrl: '',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(`${username} 데이터가 초기화되었습니다`, 'success');
+  } catch(e) {
+    toast('초기화 오류: ' + e.message, 'error');
   }
 }
 
