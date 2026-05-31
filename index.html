@@ -1573,8 +1573,8 @@ function renderUsMarketTab() {
     s.type = 'text/javascript';
     s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
     s.async = true;
-    s.innerHTML = JSON.stringify({
-      symbol, width: '100%', height: 180, locale: 'kr',
+    s.textContent = JSON.stringify({
+      symbol, width: '100%', height: 180, locale: 'ko',
       dateRange: '12M', colorTheme: 'light', isTransparent: false,
       trendLineColor: '#2563eb', underLineColor: 'rgba(37,99,235,0.1)'
     });
@@ -1589,13 +1589,15 @@ function renderUsMarketTab() {
     main.appendChild(wd);
     const s = document.createElement('script');
     s.type = 'text/javascript';
-    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
     s.async = true;
-    s.innerHTML = JSON.stringify({
-      autosize: true, symbol: 'SP:SPX', interval: 'D',
-      timezone: 'Asia/Seoul', theme: 'light', style: '1', locale: 'kr',
-      allow_symbol_change: true, calendar: false,
-      support_host: 'https://www.tradingview.com'
+    s.textContent = JSON.stringify({
+      symbols: [['S&P 500','SP:SPX|12M'],['Nasdaq 100','NASDAQ:NDX|12M'],['Dow Jones','DJ:DJI|12M']],
+      chartOnly: false, width: '100%', height: 480, locale: 'ko',
+      colorTheme: 'light', autosize: false, showVolume: false,
+      hideDateRanges: false, scalePosition: 'right', scaleMode: 'Normal',
+      lineWidth: 2, lineType: 0, chartType: 'area',
+      dateRanges: ['1d|1','1m|30','3m|60','12m|1D','60m|1W','all|1M']
     });
     main.appendChild(s);
   }
