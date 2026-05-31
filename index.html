@@ -1880,8 +1880,9 @@ async function fetchKrMarketData(btn) {
   const resultEl = document.getElementById('krMarketResult');
   const syms = ['^KS11','^KQ11','005930.KS','000660.KS','KRW=X'];
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/quote?symbols=${syms.join(',')}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName&corsDomain=finance.yahoo.com`;
-    const r = await fetch(url, { headers: {'User-Agent':'Mozilla/5.0'} });
+    const proxy = 'https://corsproxy.io/?';
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${syms.join(',')}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,fiftyTwoWeekHigh,fiftyTwoWeekLow,shortName`;
+    const r = await fetch(proxy + encodeURIComponent(url));
     const d = await r.json();
     const quotes = {};
     d.quoteResponse.result.forEach(q => { quotes[q.symbol] = q; });
