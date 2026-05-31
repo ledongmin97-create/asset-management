@@ -1708,9 +1708,38 @@ function renderProjection() {
   }
 
   const years = [1, 3, 5, 10];
-  const portRate = cost > 0 ? profit / cost : 0; // 현재 누적 수익률 (소수)
-  const portPct  = (portRate * 100).toFixed(1);
-  const portHalf = portRate / 2;
+  // 카테고리별 예상 연수익률 매핑
+  const getExpectedReturn = stock => {
+    const n = (stock.종목명 || '').toUpperCase();
+    if (/QLD|TQQQ|SOXL|UPRO|LEVERAG/.test(n))                          return 0.25;
+    if (/JEQP|JEPQ|XYLD|QYLD|커버드콜|COVERED/.test(n))               return 0.09;
+    if (/SOXX|필라델피아반도체|KODEX.*반도체|TIGER.*반도체|SOX/.test(n)) return 0.17;
+    if (/마이크론|^MU$| MU |샌디스크|SNDK|엔비디아|NVDA|AMD/.test(n))   return 0.25;
+    if (/QQQM|QQQE|나스닥.*100|NASDAQ.*100|TIGER.*나스닥|KODEX.*나스닥/.test(n)) return 0.12;
+    if (/S.P.?500|SPY|VOO|IVV|TIGER.*S.P|KODEX.*S.P/.test(n))          return 0.11;
+    if (/채권|BOND|TLT|IEF|AGG/.test(n))                               return 0.06;
+    if (/EWY|KOSPI|한국|KOREA/.test(n))                                return 0.09;
+    if (/알파벳|GOOGL|GOOGLE|애플|AAPL|마이크로소프트|MSFT|아마존|AMZN|메타|META/.test(n)) return 0.13;
+    if (/HBM|PLUS.*HBM|TIGER.*HBM/.test(n))                           return 0.20;
+    return 0.10;
+  };
+
+  const totalVal = stocks.reduce((s,r) => s+(r.평가금액||0), 0);
+  const weightedRate = totalVal > 0
+    ? stocks.reduce((s,r) => s + (r.평가금액||0)/totalVal * getExpectedReturn(r), 0)
+    : 0.10;
+  const wPct = (weightedRate * 100).toFixed(1);
+
+  // 종목별 기여 요약
+  const breakdown = stocks
+    .filter(r => r.평가금액 > 0)
+    .sort((a,b) => (b.평가금액||0)-(a.평가금액||0))
+    .slice(0, 5)
+    .map(r => {
+      const w = ((r.평가금액||0)/totalVal*100).toFixed(0);
+      const er = (getExpectedReturn(r)*100).toFixed(0);
+      return `<span style="background:var(--gray-100);border-radius:5px;padding:2px 7px;font-size:11px;color:var(--gray-600)">${r.종목명} ${w}%→${er}%</span>`;
+    }).join(' ');
 
   const marketScenarios = [
     { label:'낙관', color:'var(--success)', bg:'var(--success-light)', border:'#bbf7d0', icon:'🚀',
@@ -1725,15 +1754,15 @@ function renderProjection() {
   ];
 
   const portScenarios = [
-    { label:'현재 추세 유지', color:'var(--purple)', bg:'var(--purple-light)', border:'#ddd6fe', icon:'💼',
-      desc:`현재 수익률 +${portPct}%/년 유지 가정`,
-      calc: y => base * Math.pow(1 + portRate, y) },
-    { label:'보수적', color:'var(--gray-600)', bg:'var(--gray-100)', border:'var(--gray-300)', icon:'🛡️',
-      desc:`현재 수익률 절반 +${(portRate/2*100).toFixed(1)}%/년 가정`,
-      calc: y => base * Math.pow(1 + portHalf, y) },
-    { label:'폭락 후 현재 추세', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
-      desc:`1년차 -30% 폭락 → 이후 +${portPct}%/년 회복`,
-      calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1 + portRate, y - 1) },
+    { label:'포트폴리오 맞춤 (기본)', color:'var(--purple)', bg:'var(--purple-light)', border:'#ddd6fe', icon:'💼',
+      desc:`종목 비중 가중평균 예상 수익률 +${wPct}%/년`,
+      calc: y => base * Math.pow(1 + weightedRate, y) },
+    { label:'포트폴리오 맞춤 (보수적)', color:'var(--gray-600)', bg:'var(--gray-100)', border:'var(--gray-300)', icon:'🛡️',
+      desc:`가중평균의 60% 수준 +${(weightedRate*0.6*100).toFixed(1)}%/년`,
+      calc: y => base * Math.pow(1 + weightedRate * 0.6, y) },
+    { label:'포트폴리오 맞춤 (폭락 후)', color:'var(--warning)', bg:'var(--warning-light)', border:'#fde68a', icon:'⚠️',
+      desc:`1년차 -30% 폭락 → 이후 +${wPct}%/년 회복`,
+      calc: y => y === 1 ? base * 0.70 : base * 0.70 * Math.pow(1 + weightedRate, y - 1) },
   ];
 
   const fmt = v => {
@@ -1784,12 +1813,13 @@ function renderProjection() {
       ${renderScenarios(marketScenarios)}
     </div>
 
-    ${sectionTitle('💼', '포트폴리오 시나리오', `내 포트폴리오 현재 수익률(+${portPct}%) 기반 — 연환산 아닌 현재 누적률 적용, 참고용`)}
+    ${sectionTitle('💼', '포트폴리오 시나리오', `종목별 카테고리 가중평균 예상 수익률 +${wPct}%/년 기반`)}
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${breakdown}</div>
     <div style="display:flex;flex-direction:column;gap:12px">
       ${renderScenarios(portScenarios)}
     </div>
 
-    <div style="margin-top:14px;font-size:11px;color:var(--gray-400)">※ 세금·수수료·환율 변동 미반영. 포트폴리오 시나리오는 현재 누적 수익률을 연율로 가정한 참고치입니다.</div>`;
+    <div style="margin-top:14px;font-size:11px;color:var(--gray-400)">※ 세금·수수료·환율 변동 미반영. 포트폴리오 시나리오는 종목 카테고리별 역사적 기대수익률을 보유 비중으로 가중평균한 참고치입니다.</div>`;
 }
 
 function renderStockSummary() {
