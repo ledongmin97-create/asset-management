@@ -3014,11 +3014,14 @@ function renderChatMessages() {
 
   container.innerHTML = chatHistory.map(msg => {
     const timeStr = new Date(msg.timestamp).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    const delBtn = (id, pairDelete=false) =>
+      `<button onclick="deleteChatMessage('${id}',${pairDelete})" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--gray-300);padding:0;line-height:1" title="삭제" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--gray-300)'">✕</button>`;
+
     if (msg.role === 'user') {
       return `
         <div class="chat-msg chat-msg-user">
           <div class="chat-bubble chat-bubble-user" style="white-space:pre-wrap">${escapeHtmlChat(msg.text)}</div>
-          <div class="chat-time">${timeStr}</div>
+          <div class="chat-time" style="display:flex;gap:6px;align-items:center">${delBtn(msg.id, true)}<span>${timeStr}</span></div>
         </div>`;
     } else if (msg.pending) {
       return `
@@ -3031,7 +3034,7 @@ function renderChatMessages() {
             <div style="font-size:11px;color:var(--gray-400);margin-bottom:10px">클립보드에 질문이 복사되어 있습니다. claude.ai에 붙여넣기(Ctrl+V) 후 답변을 복사해 아래 버튼을 눌러주세요.</div>
             <button class="btn btn-primary btn-sm" onclick="openPasteChatModal('${msg.id}')">📥 답변 붙여넣기</button>
           </div>
-          <div class="chat-time">${timeStr}</div>
+          <div class="chat-time" style="display:flex;gap:6px;align-items:center"><span>${timeStr}</span>${delBtn(msg.id)}</div>
         </div>`;
     } else {
       const rendered = (typeof marked !== 'undefined') ? marked.parse(msg.text) : escapeHtmlChat(msg.text);
@@ -3041,6 +3044,7 @@ function renderChatMessages() {
           <div class="chat-time" style="display:flex;gap:8px;align-items:center">
             <span>${timeStr}</span>
             <button onclick="openPasteChatModal('${msg.id}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--gray-400);padding:0" title="답변 수정">✏️ 수정</button>
+            ${delBtn(msg.id)}
           </div>
         </div>`;
     }
@@ -3167,6 +3171,24 @@ function savePasteChatResponse() {
   closePasteChatModal();
   renderChatMessages();
   toast('답변이 저장되었습니다', 'success');
+}
+
+function deleteChatMessage(msgId, deletePair=false) {
+  const idx = chatHistory.findIndex(m => m.id === msgId);
+  if (idx === -1) return;
+  if (deletePair) {
+    // 사용자 메시지 삭제 시 바로 다음 assistant 메시지도 함께 삭제
+    const next = chatHistory[idx + 1];
+    if (next && next.role === 'assistant') {
+      chatHistory.splice(idx, 2);
+    } else {
+      chatHistory.splice(idx, 1);
+    }
+  } else {
+    chatHistory.splice(idx, 1);
+  }
+  saveChatHistoryLocal();
+  renderChatMessages();
 }
 
 function clearChatHistory() {
