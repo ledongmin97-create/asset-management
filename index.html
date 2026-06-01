@@ -1172,14 +1172,20 @@
         </div>
       </div>
 
-      <!-- 포트폴리오 반영 토글 -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-700);margin:0;user-select:none">
+      <!-- 옵션 토글 -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px;padding:8px 12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-700);margin:0;user-select:none">
           <input type="checkbox" id="chatIncludePortfolio" checked
             style="width:15px;height:15px;accent-color:var(--primary);cursor:pointer;flex-shrink:0">
-          📊 포트폴리오 데이터 포함
+          📊 포트폴리오 포함
         </label>
-        <span id="chatPortfolioStatus" style="font-size:11px;color:var(--gray-400);margin-left:4px">내 보유 종목·수익률 자동 첨부</span>
+        <div style="width:1px;height:16px;background:var(--gray-300);flex-shrink:0"></div>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-700);margin:0;user-select:none">
+          <input type="checkbox" id="chatContinueMode"
+            style="width:15px;height:15px;accent-color:var(--purple);cursor:pointer;flex-shrink:0">
+          💬 대화 이어가기
+        </label>
+        <span id="chatContinueStatus" style="font-size:11px;color:var(--gray-400);margin-left:auto">이전 Q&A 포함 시 문맥 유지</span>
       </div>
 
       <!-- 입력창 -->
@@ -2972,11 +2978,22 @@ function renderChatTab() {
   loadChatHistory();
   renderChatMessages();
   const cb = document.getElementById('chatIncludePortfolio');
-  const status = document.getElementById('chatPortfolioStatus');
-  if (cb && status) {
-    cb.onchange = () => {
-      status.textContent = cb.checked ? '내 보유 종목·수익률 자동 첨부' : '일반 질문으로 전송';
-      status.style.color = cb.checked ? 'var(--gray-400)' : 'var(--warning)';
+  if (cb) {
+    cb.onchange = () => {};
+  }
+  const cbContinue = document.getElementById('chatContinueMode');
+  const continueStatus = document.getElementById('chatContinueStatus');
+  if (cbContinue && continueStatus) {
+    cbContinue.onchange = () => {
+      if (cbContinue.checked) {
+        const completedPairs = chatHistory.filter(m => !m.pending && m.text).length / 2;
+        const count = Math.min(Math.floor(completedPairs), 5);
+        continueStatus.textContent = count > 0 ? `최근 ${count}개 Q&A 포함 예정` : '아직 이전 대화 없음';
+        continueStatus.style.color = count > 0 ? 'var(--purple)' : 'var(--gray-400)';
+      } else {
+        continueStatus.textContent = '이전 Q&A 포함 시 문맥 유지';
+        continueStatus.style.color = 'var(--gray-400)';
+      }
     };
   }
 }
@@ -3077,11 +3094,32 @@ function buildAndCopyPrompt(question) {
     stockSection = ['(포트폴리오 데이터 없음 — 구글 시트 동기화 후 질문하면 맞춤 답변을 받을 수 있어요)', ''];
   }
 
+  const continueMode = document.getElementById('chatContinueMode')?.checked ?? false;
+  const historySection = [];
+  if (continueMode) {
+    const pairs = [];
+    const completed = chatHistory.filter(m => !m.pending && m.text);
+    for (let i = 0; i < completed.length - 1; i += 2) {
+      const q = completed[i];
+      const a = completed[i + 1];
+      if (q?.role === 'user' && a?.role === 'assistant') {
+        pairs.push(`[Q${pairs.length+1}] ${q.text}\n[A${pairs.length+1}] ${a.text.slice(0, 400)}${a.text.length > 400 ? '...' : ''}`);
+      }
+    }
+    const recent = pairs.slice(-5);
+    if (recent.length) {
+      historySection.push('=== 이전 대화 맥락 ===', '', ...recent, '');
+    }
+  }
+
   const prompt = [
     '=== 자산관리 대시보드 AI 챗봇 질문 ===',
-    `질문: ${question}`,
     '',
+    ...historySection,
     ...stockSection,
+    `=== ${continueMode && historySection.length ? '새 ' : ''}질문 ===`,
+    question,
+    '',
     '---',
     '위 맥락을 참고해서 질문에 답해줘.',
     '마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘.',
