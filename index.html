@@ -2864,7 +2864,8 @@ fbAuth.onAuthStateChanged(async (user) => {
 
 // ── 분석 붙여넣기 ──
 function openPasteAnalysisModal() {
-  const saved = localStorage.getItem('user_analysis_text') || '';
+  const lsKey = currentUser ? `user_analysis_text_${currentUser.uid}` : 'user_analysis_text';
+  const saved = localStorage.getItem(lsKey) || '';
   document.getElementById('pasteAnalysisInput').value = saved;
   document.getElementById('pasteAnalysisOverlay').classList.add('open');
 }
@@ -2872,8 +2873,8 @@ function openPasteAnalysisModal() {
 async function savePastedAnalysis() {
   const text = document.getElementById('pasteAnalysisInput').value.trim();
   if (!text) { toast('내용을 입력해주세요', 'error'); return; }
-  localStorage.setItem('user_analysis_text', text);
   if (currentUser) {
+    localStorage.setItem(`user_analysis_text_${currentUser.uid}`, text);
     await fbDb.collection('userData').doc(currentUser.uid).update({ userAnalysisText: text, userAnalysisTime: new Date().toISOString() });
   }
   displayPastedAnalysis(text);
@@ -2883,8 +2884,8 @@ async function savePastedAnalysis() {
 
 async function clearPastedAnalysis() {
   if (!confirm('저장된 분석을 초기화하시겠습니까?')) return;
-  localStorage.removeItem('user_analysis_text');
   if (currentUser) {
+    localStorage.removeItem(`user_analysis_text_${currentUser.uid}`);
     await fbDb.collection('userData').doc(currentUser.uid).update({ userAnalysisText: '', userAnalysisTime: '' });
   }
   document.getElementById('pasteAnalysisInput').value = '';
@@ -2914,7 +2915,7 @@ async function loadUserAnalysis() {
     text = snap.data()?.userAnalysisText || '';
     savedTime = snap.data()?.userAnalysisTime || '';
   }
-  if (!text) text = localStorage.getItem('user_analysis_text') || '';
+  if (!text && currentUser) text = localStorage.getItem(`user_analysis_text_${currentUser.uid}`) || '';
   if (text) displayPastedAnalysis(text, savedTime);
 }
 
