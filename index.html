@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --primary: #2563eb; --primary-light: #eff6ff; --primary-dark: #1d4ed8;
@@ -306,9 +307,14 @@
       <h1>자산관리 대시보드</h1>
     </div>
     <div class="header-actions">
+      <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(event)">
       <button id="syncBtn" class="btn btn-outline" onclick="syncSheets()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
         구글 시트 동기화
+      </button>
+      <button class="btn btn-outline" onclick="triggerExcelUpload()" title="구글 시트와 동일한 양식의 엑셀 파일을 업로드합니다">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        엑셀 업로드
       </button>
       <a id="sheetLink" href="https://docs.google.com/spreadsheets/d/1vK61RtHYE7HeA7FKdeEldp1Py5NGGpXB8e_hgRvUSEc" target="_blank" class="btn btn-ghost">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -1510,6 +1516,157 @@ async function syncSheets() {
     console.error(e);
     const hint = e.message.includes('로드 실패') ? '구글 시트가 "링크가 있는 모든 사용자" 공개로 설정되어 있는지 확인하세요' : e.message;
     toast('동기화 실패: ' + hint, 'error');
+  }
+}
+
+// ══════════════════════════════════════════
+// EXCEL UPLOAD (SheetJS)
+// ══════════════════════════════════════════
+function xlCell(ws, r, c) {
+  return ws[XLSX.utils.encode_cell({ r, c })] || null;
+}
+function xlNum(cell) {
+  if (!cell || cell.v == null || typeof cell.v !== 'number') return null;
+  if (cell.z && String(cell.z).includes('%')) return +(cell.v * 100).toFixed(4);
+  return cell.v;
+}
+function xlStr(cell) {
+  if (!cell || cell.v == null) return '';
+  // 날짜 시리얼 숫자인 경우 → "YYYY-MM" 형태로 변환
+  if (cell.t === 'n' && cell.z && /[ymd]/i.test(cell.z)) {
+    try {
+      const d = XLSX.SSF.parse_date_code(cell.v);
+      if (d) return `${d.y}-${String(d.m).padStart(2,'0')}`;
+    } catch(_) {}
+  }
+  return cell.w || String(cell.v);
+}
+
+function excelToMonthly(ws) {
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const rows = [];
+  for (let r = 1; r <= range.e.r; r++) {
+    const 월 = xlStr(xlCell(ws, r, 0));
+    if (!월) continue;
+    rows.push({
+      월,
+      현금:          xlNum(xlCell(ws, r,  1)),
+      투자:          xlNum(xlCell(ws, r,  2)),
+      부동산:        xlNum(xlCell(ws, r,  3)),
+      대출:          xlNum(xlCell(ws, r,  4)),
+      자산:          xlNum(xlCell(ws, r,  5)),
+      순자산:        xlNum(xlCell(ws, r,  6)),
+      금융자산:      xlNum(xlCell(ws, r,  7)),
+      증감순자산:    xlNum(xlCell(ws, r,  8)),
+      증감금융자산:  xlNum(xlCell(ws, r,  9)),
+      목표액:        xlNum(xlCell(ws, r, 10)),
+      투자원금:      xlNum(xlCell(ws, r, 11)),
+      수익:          xlNum(xlCell(ws, r, 12)),
+      수익률:        xlNum(xlCell(ws, r, 13)),
+    });
+  }
+  return rows;
+}
+
+function excelToAnnual(ws) {
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const rows = [];
+  for (let r = 1; r <= range.e.r; r++) {
+    const 연도 = xlStr(xlCell(ws, r, 0));
+    if (!연도) continue;
+    rows.push({
+      연도,
+      현금:          xlNum(xlCell(ws, r,  1)),
+      투자:          xlNum(xlCell(ws, r,  2)),
+      부동산:        xlNum(xlCell(ws, r,  3)),
+      대출:          xlNum(xlCell(ws, r,  4)),
+      자산:          xlNum(xlCell(ws, r,  5)),
+      순자산:        xlNum(xlCell(ws, r,  6)),
+      금융자산:      xlNum(xlCell(ws, r,  7)),
+      증감순자산:    xlNum(xlCell(ws, r,  8)),
+      증감금융자산:  xlNum(xlCell(ws, r,  9)),
+      목표:          xlNum(xlCell(ws, r, 10)),
+      시나리오대비:  xlNum(xlCell(ws, r, 11)),
+    });
+  }
+  return rows;
+}
+
+function excelToStocks(ws) {
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  // 헤더행(row 0) col 11 = 환율
+  const rateCell = xlCell(ws, 0, 11);
+  const rate = (rateCell && typeof rateCell.v === 'number') ? rateCell.v : 1520;
+
+  const list = [];
+  for (let r = 1; r <= range.e.r; r++) {
+    const nameCell = xlCell(ws, r, 0);
+    const name = nameCell ? String(nameCell.v || '').trim() : '';
+    if (!name) continue;
+
+    const price   = xlNum(xlCell(ws, r, 1));
+    const avgCost = xlNum(xlCell(ws, r, 2));
+    const qty     = xlNum(xlCell(ws, r, 3));
+    const krwVal  = xlNum(xlCell(ws, r, 5));
+    const accCell = xlCell(ws, r, 6);
+    const account = accCell ? String(accCell.v || '').trim() : '';
+
+    const isRetire   = account.includes('퇴직') || account.includes('IRP') || account.includes('ISA');
+    const isDomestic = isRetire || (price != null && price > 5000);
+
+    let cost = null;
+    if (avgCost != null && qty != null) {
+      cost = isDomestic ? Math.round(avgCost * qty) : Math.round(avgCost * qty * rate);
+    }
+    const profit = (krwVal != null && cost != null) ? krwVal - cost : null;
+    const pctRet = (profit != null && cost > 0) ? +(profit / cost * 100).toFixed(2) : null;
+
+    list.push({
+      종목명: name, 현재가: price, 수량: qty, 평가금액: krwVal,
+      계좌: account,
+      카테고리: isRetire ? '연금/ISA' : (isDomestic ? '국내 ETF' : '해외'),
+      투자원금: cost, 수익금: profit, 수익률: pctRet,
+    });
+  }
+  return { stocks: list, rate };
+}
+
+function triggerExcelUpload() {
+  document.getElementById('excelFileInput').value = '';
+  document.getElementById('excelFileInput').click();
+}
+
+async function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  toast('엑셀 파일을 읽는 중...', 'info');
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellNF: true });
+
+    // 시트명으로 먼저 찾고, 없으면 순서(0,1,2)로 fallback
+    const getWs = (name, idx) => wb.Sheets[name] || wb.Sheets[wb.SheetNames[idx]];
+    const monthlyWs = getWs('월별현황', 0);
+    const annualWs  = getWs('연간현황', 1);
+    const stocksWs  = getWs('주식 수량', 2);
+
+    const m2 = monthlyWs ? excelToMonthly(monthlyWs) : [];
+    const a2 = annualWs  ? excelToAnnual(annualWs)   : [];
+    const { stocks: s2, rate } = stocksWs ? excelToStocks(stocksWs) : { stocks: [], rate: 1520 };
+
+    if (!m2.length && !a2.length && !s2.length) {
+      toast('데이터를 찾을 수 없습니다. 시트명을 확인하세요 (월별현황 / 연간현황 / 주식 수량)', 'error');
+      return;
+    }
+    if (m2.length) monthly = m2;
+    if (a2.length) annual  = a2;
+    if (s2.length) { stocks = s2; exchangeRate = rate; }
+    save();
+    render();
+    toast(`엑셀 업로드 완료! 월별 ${m2.length}행 · 주식 ${s2.length}종목`, 'success');
+  } catch(e) {
+    console.error(e);
+    toast('엑셀 읽기 실패: ' + e.message, 'error');
   }
 }
 
