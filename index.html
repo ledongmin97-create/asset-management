@@ -257,6 +257,27 @@
     .quote-change-up{font-size:12px;font-weight:600;color:var(--success);}
     .quote-change-down{font-size:12px;font-weight:600;color:var(--danger);}
     @media(max-width:768px){.quote-grid{grid-template-columns:repeat(2,1fr)}}
+
+    /* CHATBOT */
+    .chat-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+    .chat-chip{padding:6px 14px;border-radius:999px;border:1px solid var(--gray-300);background:white;font-size:12px;font-weight:500;color:var(--gray-700);cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
+    .chat-chip:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
+    .chat-messages{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--gray-50);border-radius:10px;border:1px solid var(--gray-200);margin-bottom:12px;min-height:340px;max-height:480px;}
+    .chat-msg{display:flex;flex-direction:column;gap:4px;max-width:82%;}
+    .chat-msg-user{align-self:flex-end;align-items:flex-end;}
+    .chat-msg-assistant{align-self:flex-start;}
+    .chat-bubble{padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.65;}
+    .chat-bubble-user{background:var(--primary);color:white;border-bottom-right-radius:4px;}
+    .chat-bubble-assistant{background:white;border:1px solid var(--gray-200);color:var(--gray-800);border-bottom-left-radius:4px;box-shadow:var(--shadow);}
+    .chat-bubble-pending{background:var(--gray-100);border:1.5px dashed var(--gray-300);color:var(--gray-500);border-bottom-left-radius:4px;}
+    .chat-time{font-size:10px;color:var(--gray-400);}
+    .chat-input-row{display:flex;gap:10px;align-items:flex-end;}
+    .chat-input-row textarea{flex:1;padding:11px 13px;border:1.5px solid var(--gray-300);border-radius:10px;font-size:13px;resize:none;outline:none;font-family:inherit;line-height:1.5;height:48px;max-height:120px;transition:border-color .15s;overflow-y:auto;}
+    .chat-input-row textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+    .chat-send-btn{padding:0 18px;height:48px;border-radius:10px;background:var(--primary);color:white;border:none;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0;font-family:inherit;}
+    .chat-send-btn:hover{background:var(--primary-dark);}
+    .chat-send-btn:disabled{opacity:.5;cursor:not-allowed;}
+    @keyframes chatDot{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
   </style>
 </head>
 <body>
@@ -361,6 +382,7 @@
         <button class="tab-btn" data-tab="stocks"  onclick="switchTab('stocks')">📈 주식현황</button>
         <button class="tab-btn" data-tab="usmarket" onclick="switchTab('usmarket')">🇺🇸 미국시장</button>
         <button class="tab-btn" data-tab="krmarket" onclick="switchTab('krmarket')">🇰🇷 한국시장</button>
+        <button class="tab-btn" data-tab="chatbot" onclick="switchTab('chatbot')">💬 AI 챗봇</button>
       </div>
       <div class="tab-actions" id="tabActions"></div>
     </div>
@@ -1119,6 +1141,51 @@
       </div>
     </div>
 
+    <!-- CHATBOT -->
+    <div class="tab-pane" id="pane-chatbot">
+      <!-- 헤더 -->
+      <div style="background:linear-gradient(135deg,var(--primary-light),var(--purple-light));border:1px solid #c4b5fd;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+        <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;flex-shrink:0">💬</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;color:var(--gray-900)">AI 투자 챗봇</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:2px">포트폴리오 컨텍스트 자동 포함 · claude.ai 연동 · 자유롭게 질문하세요</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="clearChatHistory()" style="flex-shrink:0">🗑️ 대화 초기화</button>
+      </div>
+
+      <!-- 빠른 질문 칩 -->
+      <div class="chat-chips">
+        <button class="chat-chip" onclick="setChatInput('내 포트폴리오 현재 상황 분석하고 리밸런싱 조언 해줘')">📊 포트폴리오 분석</button>
+        <button class="chat-chip" onclick="setChatInput('이번 주 미국·한국 시장 주요 이슈와 주목할 섹터는?')">🌐 시장 이슈 분석</button>
+        <button class="chat-chip" onclick="setChatInput('', '뉴스/이슈를 직접 입력해줘\n예: 젠슨황이 방한해서 삼성·SK 회장 만난다는데 관련주 추천해줘')">📰 뉴스 관련주 추천</button>
+        <button class="chat-chip" onclick="setChatInput('지금 매수하기 좋은 미국 배당주 3개 추천해줘')">💰 배당주 추천</button>
+        <button class="chat-chip" onclick="setChatInput('AI 반도체 관련 미국 종목 중 지금 주목할 만한 것 분석해줘')">🤖 AI 반도체 종목</button>
+        <button class="chat-chip" onclick="setChatInput('내 포트폴리오에서 지금 매도 고려할 종목과 이유 알려줘')">💸 매도 타이밍 점검</button>
+      </div>
+
+      <!-- 채팅 메시지 -->
+      <div class="chat-messages" id="chatMessages">
+        <div style="text-align:center;color:var(--gray-400);font-size:13px;padding:40px 0">
+          <div style="font-size:32px;margin-bottom:12px">💬</div>
+          <div style="font-weight:500">질문을 입력하거나 위의 버튼을 눌러 시작하세요</div>
+          <div style="font-size:11px;margin-top:6px">포트폴리오 데이터가 자동으로 포함됩니다</div>
+        </div>
+      </div>
+
+      <!-- 입력창 -->
+      <div class="chat-input-row">
+        <textarea id="chatInput"
+          placeholder="예: 젠슨황이 방한해서 회장들 만난다는데 관련주 추천해줘"
+          onkeydown="chatInputKeydown(event)"
+          oninput="autoResizeChatInput(this)"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage()" id="chatSendBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          보내기
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:center">Enter로 전송 · Shift+Enter 줄바꿈 · 클립보드 복사 후 claude.ai에서 답변 받기</div>
+    </div>
+
   </div>
 </main>
 
@@ -1202,6 +1269,27 @@
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- 챗봇 답변 붙여넣기 -->
+<div class="overlay" id="pasteChatOverlay" onclick="if(event.target===this)closePasteChatModal()">
+  <div class="modal modal-wide" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title">📥 Claude 답변 붙여넣기</span>
+      <button class="modal-close" onclick="closePasteChatModal()">✕</button>
+    </div>
+    <input type="hidden" id="pasteChatMsgId">
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;line-height:1.6">
+      claude.ai에서 받은 답변을 아래에 붙여넣으세요.<br>
+      <span style="font-size:11px;color:var(--gray-400)">마크다운 그대로 붙여넣으면 자동으로 렌더링됩니다.</span>
+    </p>
+    <textarea id="pasteChatInput" placeholder="claude.ai 답변을 여기에 붙여넣으세요..."
+      style="width:100%;height:280px;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-outline" onclick="closePasteChatModal()">취소</button>
+      <button class="btn btn-primary" onclick="savePasteChatResponse()">저장 · 표시</button>
+    </div>
+  </div>
+</div>
 
 <!-- 분석 붙여넣기 -->
 <div class="overlay" id="pasteAnalysisOverlay" onclick="if(event.target===this)closeModal('pasteAnalysisOverlay')">
@@ -2529,12 +2617,13 @@ async function runAiAnalysis() {
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-  ['monthly','annual','stocks','usmarket','krmarket'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
+  ['monthly','annual','stocks','usmarket','krmarket','chatbot'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
   renderTabActions();
   if (tab==='monthly')  renderMonthlyTable();
   if (tab==='stocks')   renderStocksTab();
   if (tab==='usmarket') renderUsMarketTab();
   if (tab==='krmarket') renderKrMarketTab();
+  if (tab==='chatbot')  renderChatTab();
 }
 
 function renderTabActions() {
@@ -2847,6 +2936,205 @@ function copyPortfolioForClaude() {
     setTimeout(() => ta.remove(), 15000);
     openClaude();
   });
+}
+
+// ══════════════════════════════════════════
+// CHATBOT
+// ══════════════════════════════════════════
+let chatHistory = [];
+
+function chatStorageKey() {
+  return currentUser ? `chatHistory_${currentUser.uid}` : 'chatHistory_guest';
+}
+
+function loadChatHistory() {
+  try {
+    const raw = localStorage.getItem(chatStorageKey());
+    chatHistory = raw ? JSON.parse(raw) : [];
+  } catch(e) { chatHistory = []; }
+}
+
+function saveChatHistoryLocal() {
+  try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
+}
+
+function renderChatTab() {
+  loadChatHistory();
+  renderChatMessages();
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+
+  if (!chatHistory.length) {
+    container.innerHTML = `
+      <div style="text-align:center;color:var(--gray-400);font-size:13px;padding:40px 0">
+        <div style="font-size:32px;margin-bottom:12px">💬</div>
+        <div style="font-weight:500">질문을 입력하거나 위의 버튼을 눌러 시작하세요</div>
+        <div style="font-size:11px;margin-top:6px">포트폴리오 데이터가 자동으로 포함됩니다</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = chatHistory.map(msg => {
+    const timeStr = new Date(msg.timestamp).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+    if (msg.role === 'user') {
+      return `
+        <div class="chat-msg chat-msg-user">
+          <div class="chat-bubble chat-bubble-user" style="white-space:pre-wrap">${escapeHtmlChat(msg.text)}</div>
+          <div class="chat-time">${timeStr}</div>
+        </div>`;
+    } else if (msg.pending) {
+      return `
+        <div class="chat-msg chat-msg-assistant">
+          <div class="chat-bubble chat-bubble-pending">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="display:flex;gap:3px">${[0,150,300].map(d=>`<div style="width:6px;height:6px;background:var(--gray-400);border-radius:50%;animation:chatDot 1.2s ease-in-out ${d}ms infinite"></div>`).join('')}</div>
+              <span style="font-size:12px;font-weight:600;color:var(--gray-600)">claude.ai에서 답변 확인 후 붙여넣기 해주세요</span>
+            </div>
+            <div style="font-size:11px;color:var(--gray-400);margin-bottom:10px">클립보드에 질문이 복사되어 있습니다. claude.ai에 붙여넣기(Ctrl+V) 후 답변을 복사해 아래 버튼을 눌러주세요.</div>
+            <button class="btn btn-primary btn-sm" onclick="openPasteChatModal('${msg.id}')">📥 답변 붙여넣기</button>
+          </div>
+          <div class="chat-time">${timeStr}</div>
+        </div>`;
+    } else {
+      const rendered = (typeof marked !== 'undefined') ? marked.parse(msg.text) : escapeHtmlChat(msg.text);
+      return `
+        <div class="chat-msg chat-msg-assistant">
+          <div class="chat-bubble chat-bubble-assistant ai-result">${rendered}</div>
+          <div class="chat-time" style="display:flex;gap:8px;align-items:center">
+            <span>${timeStr}</span>
+            <button onclick="openPasteChatModal('${msg.id}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--gray-400);padding:0" title="답변 수정">✏️ 수정</button>
+          </div>
+        </div>`;
+    }
+  }).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) { toast('질문을 입력해주세요', 'error'); return; }
+
+  const now = Date.now();
+  const userMsg = { id: 'u_' + now, role: 'user', text, timestamp: now };
+  const assistantMsg = { id: 'a_' + now, role: 'assistant', text: '', pending: true, timestamp: now + 1 };
+
+  chatHistory.push(userMsg, assistantMsg);
+  saveChatHistoryLocal();
+  renderChatMessages();
+
+  input.value = '';
+  input.style.height = '48px';
+  input.placeholder = '예: 젠슨황이 방한해서 회장들 만난다는데 관련주 추천해줘';
+
+  buildAndCopyPrompt(text, assistantMsg.id);
+}
+
+function buildAndCopyPrompt(question) {
+  const total  = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+  const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+
+  const stockSection = stocks.length ? [
+    '--- 내 포트폴리오 ---',
+    `총 평가금액: ${w(total)} | 투자원금: ${w(cost)} | 수익금: ${w(profit)} | 수익률: ${cost>0?(profit/cost*100).toFixed(2):0}%`,
+    `환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD`,
+    '',
+    ...stocks.map(r => {
+      const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+      return `${r.종목명} | ${r.카테고리||'-'} | 평가금액 ${w(r.평가금액)} (비중 ${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
+    }),
+    ''
+  ] : ['(포트폴리오 데이터 없음 — 구글 시트 동기화 후 질문하면 맞춤 답변을 받을 수 있어요)', ''];
+
+  const prompt = [
+    '=== 자산관리 대시보드 AI 챗봇 질문 ===',
+    `질문: ${question}`,
+    '',
+    ...stockSection,
+    '---',
+    '위 맥락을 참고해서 질문에 답해줘.',
+    '마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘.',
+    '투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.',
+  ].join('\n');
+
+  const openClaude = () => window.open('https://claude.ai', '_blank');
+  navigator.clipboard.writeText(prompt).then(() => {
+    toast('복사 완료! claude.ai에 붙여넣기(Ctrl+V) 하세요', 'success');
+    openClaude();
+  }).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), {value: prompt});
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    ta.remove();
+    toast('복사 완료! claude.ai에 붙여넣기(Ctrl+V) 하세요', 'success');
+    openClaude();
+  });
+}
+
+function openPasteChatModal(msgId) {
+  const existing = chatHistory.find(m => m.id === msgId);
+  document.getElementById('pasteChatMsgId').value = msgId;
+  document.getElementById('pasteChatInput').value = (existing && !existing.pending) ? existing.text : '';
+  document.getElementById('pasteChatOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pasteChatInput').focus(), 100);
+}
+
+function closePasteChatModal() {
+  document.getElementById('pasteChatOverlay').classList.remove('open');
+}
+
+function savePasteChatResponse() {
+  const msgId = document.getElementById('pasteChatMsgId').value;
+  const text = document.getElementById('pasteChatInput').value.trim();
+  if (!text) { toast('답변 내용을 입력해주세요', 'error'); return; }
+
+  const idx = chatHistory.findIndex(m => m.id === msgId);
+  if (idx !== -1) {
+    chatHistory[idx] = { ...chatHistory[idx], text, pending: false, timestamp: Date.now() };
+    saveChatHistoryLocal();
+  }
+  closePasteChatModal();
+  renderChatMessages();
+  toast('답변이 저장되었습니다', 'success');
+}
+
+function clearChatHistory() {
+  if (!confirm('대화 기록을 모두 삭제할까요?')) return;
+  chatHistory = [];
+  saveChatHistoryLocal();
+  renderChatMessages();
+}
+
+function setChatInput(text, customPlaceholder) {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+  input.value = text;
+  if (customPlaceholder) input.placeholder = customPlaceholder;
+  input.focus();
+  autoResizeChatInput(input);
+}
+
+function chatInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+function autoResizeChatInput(el) {
+  el.style.height = '48px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function escapeHtmlChat(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ══════════════════════════════════════════
