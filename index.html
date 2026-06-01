@@ -3152,7 +3152,8 @@ function toast(msg,type='info'){
 function render(){
   renderSummary(); renderCharts();
   renderMonthlyTable(); renderAnnualTable();
-  if(currentTab==='stocks') renderStocksTab();
+  if(currentTab==='stocks')  renderStocksTab();
+  if(currentTab==='chatbot') renderChatTab();
   renderTabActions();
 }
 
@@ -3301,6 +3302,7 @@ fbAuth.onAuthStateChanged(async (user) => {
     document.getElementById('loadingOverlay').style.display = 'none';
   } else {
     currentUser = null; currentUserMeta = null;
+    chatHistory = [];
     document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('loginBtn').textContent = '로그인';
