@@ -2388,6 +2388,18 @@ function renderUsMarketTab() {
   if (ak) ak.value = localStorage.getItem(avKeyName()) || '';
   const ck = document.getElementById('usClKey');
   if (ck) ck.value = localStorage.getItem(clApiKeyName()) || '';
+
+  // 이전 시장 데이터 캐시 복원
+  try {
+    const c = JSON.parse(localStorage.getItem('us_market_cache') || 'null');
+    if (c) {
+      if (c.result) document.getElementById('usMarketResult').innerHTML = c.result;
+      Object.entries(c.cards || {}).forEach(([id, data]) => {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = data.html; el.style.cssText = data.style; }
+      });
+    }
+  } catch(e) {}
 }
 
 let krMarketInitialized = false;
@@ -2411,6 +2423,18 @@ function renderKrMarketTab() {
     });
     main.appendChild(s);
   }
+
+  // 이전 시장 데이터 캐시 복원
+  try {
+    const c = JSON.parse(localStorage.getItem('kr_market_cache') || 'null');
+    if (c) {
+      if (c.result) document.getElementById('krMarketResult').innerHTML = c.result;
+      Object.entries(c.cards || {}).forEach(([id, data]) => {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = data.html; el.style.cssText = data.style; }
+      });
+    }
+  } catch(e) {}
 }
 
 async function fetchKrMarketData(btn) {
@@ -2506,7 +2530,12 @@ async function fetchKrMarketData(btn) {
         <div style="position:relative;height:200px"><canvas id="krDetailChart"></canvas></div>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
-    localStorage.setItem('kr_market_cache_html', resultEl.innerHTML);
+    const krCache = { result: resultEl.innerHTML, cards: {} };
+    ['krCard_kospi','krCard_kosdaq','krCard_rate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) krCache.cards[id] = { html: el.innerHTML, style: el.style.cssText };
+    });
+    localStorage.setItem('kr_market_cache', JSON.stringify(krCache));
 
     // 스파크라인 그리기
     setTimeout(() => {
@@ -2986,7 +3015,12 @@ async function fetchUsMarketData(btn) {
         </table>
       </div>
       <div style="font-size:11px;color:var(--gray-400);text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
-    localStorage.setItem('us_market_cache_html', document.getElementById('usMarketResult').innerHTML);
+    const usCache = { result: resultEl.innerHTML, cards: {} };
+    ['usCard_sp500','usCard_nasdaq','usCard_dji','claudeCard_sp500','claudeCard_nasdaq','claudeCard_dji'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) usCache.cards[id] = { html: el.innerHTML, style: el.style.cssText };
+    });
+    localStorage.setItem('us_market_cache', JSON.stringify(usCache));
 
     setTimeout(() => {
       stockSyms.forEach(sym => {
