@@ -2506,6 +2506,7 @@ async function fetchKrMarketData(btn) {
         <div style="position:relative;height:200px"><canvas id="krDetailChart"></canvas></div>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
+    localStorage.setItem('kr_market_cache_html', resultEl.innerHTML);
 
     // 스파크라인 그리기
     setTimeout(() => {
@@ -2608,8 +2609,27 @@ function postProcessAiHtml(html) {
   return html;
 }
 
+async function saveAiAnalysis(key, rawMd, timestamp) {
+  if (!currentUser || !rawMd) return;
+  try {
+    await fbDb.collection('userData').doc(currentUser.uid).update({
+      [`aiAnalysis.${key}`]: { rawMd, timestamp }
+    });
+  } catch(e) { /* 저장 실패는 무시 */ }
+}
+
 function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR'), rawMd = '') {
-  if (rawMd && targetEl.id) aiResultsRawMd[targetEl.id] = rawMd;
+  if (rawMd && targetEl.id) {
+    aiResultsRawMd[targetEl.id] = rawMd;
+    const keyMap = {
+      portfolioAnalysisContent: 'portfolio',
+      krAiAnalysisResult: 'krMarket',
+      monthlyInsightResult: 'monthly',
+      annualInsightResult: 'annual',
+    };
+    const key = keyMap[targetEl.id];
+    if (key) saveAiAnalysis(key, rawMd, now);
+  }
   const processedHtml = postProcessAiHtml(html);
   const copyBtn = (rawMd && targetEl.id)
     ? `<button onclick="copyAiResult('${targetEl.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>`
@@ -2836,6 +2856,7 @@ function applyMarketAnalysisText(text) {
   const processedHtml = postProcessAiHtml(html);
   aiResultsRawMd['claudeAnalysisContent'] = text;
   const now = new Date().toLocaleString('ko-KR');
+  saveAiAnalysis('usMarket', text, now);
   document.getElementById('claudeAnalysisContent').innerHTML = `
     <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
     <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
@@ -2965,6 +2986,7 @@ async function fetchUsMarketData(btn) {
         </table>
       </div>
       <div style="font-size:11px;color:var(--gray-400);text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
+    localStorage.setItem('us_market_cache_html', document.getElementById('usMarketResult').innerHTML);
 
     setTimeout(() => {
       stockSyms.forEach(sym => {
@@ -3899,6 +3921,24 @@ async function loadFromFirestore() {
     stocks  = d.stocks  || [];
     gasUrl  = d.gasUrl  || '';
     if (d.sheetId) SHEET_ID = d.sheetId;
+    // AI 분석 결과 복원
+    const ai = d.aiAnalysis || {};
+    const restoreMap = {
+      portfolio:  'portfolioAnalysisContent',
+      krMarket:   'krAiAnalysisResult',
+      monthly:    'monthlyInsightResult',
+      annual:     'annualInsightResult',
+      usMarket:   'claudeAnalysisContent',
+    };
+    setTimeout(() => {
+      Object.entries(restoreMap).forEach(([key, elId]) => {
+        if (!ai[key]?.rawMd) return;
+        const el = document.getElementById(elId);
+        if (!el) return;
+        const html = (typeof marked !== 'undefined') ? marked.parse(ai[key].rawMd) : ai[key].rawMd.replace(/\n/g,'<br>');
+        renderAiResult(html, el, ai[key].timestamp || '', ai[key].rawMd);
+      });
+    }, 500);
   } else {
     const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
     monthly = isOwner ? JSON.parse(JSON.stringify(DEFAULT_MONTHLY)) : [];
@@ -3936,6 +3976,8 @@ fbAuth.onAuthStateChanged(async (user) => {
     document.getElementById('loadingOverlay').style.display = 'none';
   } else {
     currentUser = null; currentUserMeta = null;
+    ['portfolioAnalysisContent','krAiAnalysisResult','monthlyInsightResult','annualInsightResult','claudeAnalysisContent']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     chatHistory = [];
     document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('loginOverlay').style.display = 'flex';
@@ -4172,7 +4214,12 @@ async function adminDeleteUser(uid, username) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => { /* 로그인 후 onAuthStateChanged 에서 render */ });
+document.addEventListener('DOMContentLoaded', () => {
+  const krCache = localStorage.getItem('kr_market_cache_html');
+  if (krCache) document.getElementById('krMarketResult').innerHTML = krCache;
+  const usCache = localStorage.getItem('us_market_cache_html');
+  if (usCache) document.getElementById('usMarketResult').innerHTML = usCache;
+});
 </script>
 </body>
 </html>
