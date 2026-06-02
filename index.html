@@ -2505,7 +2505,7 @@ async function fetchKrMarketData(btn) {
         <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:12px">📈 삼성전자 · SK하이닉스 1개월 추이 (% 기준)</div>
         <div style="position:relative;height:200px"><canvas id="krDetailChart"></canvas></div>
       </div>
-      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
+      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
 
     // 스파크라인 그리기
     setTimeout(() => {
@@ -2555,7 +2555,7 @@ async function fetchKrMarketData(btn) {
     }, 50);
 
     const timeEl = document.getElementById('krAnalysisTime');
-    if (timeEl) timeEl.textContent = '갱신: ' + new Date().toLocaleString('ko-KR');
+    if (timeEl) timeEl.textContent = '갱신: ' + new Date().toLocaleString('ko-KR') + ' · ⏱ 15분 지연';
     toast('한국 시장 데이터 갱신 완료!', 'success');
   } catch(e) {
     resultEl.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:16px">데이터 로드 실패: ${e.message}</div>`;
@@ -2840,7 +2840,7 @@ function applyMarketAnalysisText(text) {
     <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
     <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
       <button onclick="copyAiResult('claudeAnalysisContent')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>
-      <span>🤖 Claude AI 분석 · Yahoo Finance 실시간 데이터 기반 · ${now}</span>
+      <span>🤖 Claude AI 분석 · Yahoo Finance (⏱ 15분 지연) · ${now}</span>
     </div>`;
 }
 
@@ -2964,7 +2964,7 @@ async function fetchUsMarketData(btn) {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <div style="font-size:11px;color:var(--gray-400);text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
+      <div style="font-size:11px;color:var(--gray-400);text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
 
     setTimeout(() => {
       stockSyms.forEach(sym => {
@@ -3137,7 +3137,7 @@ async function runAiAnalysis() {
       <div>${newsRows || '<div style="color:var(--gray-400);font-size:12px;padding:16px 0">뉴스 없음</div>'}</div>
 
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--gray-100);font-size:11px;color:var(--gray-400);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-        <span>📡 Yahoo Finance + Alpha Vantage 실시간</span>
+        <span>📡 Yahoo Finance + Alpha Vantage · ⏱ 15분 지연</span>
         <span>갱신: ${new Date().toLocaleString('ko-KR')}</span>
       </div>`;
 
