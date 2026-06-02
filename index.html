@@ -337,6 +337,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         엑셀 업로드
       </button>
+      <button class="btn btn-ghost" onclick="openApiKeyModal()" title="Claude · Alpha Vantage API 키 설정">⚙️ API 키</button>
       <a id="sheetLink" href="https://docs.google.com/spreadsheets/d/1vK61RtHYE7HeA7FKdeEldp1Py5NGGpXB8e_hgRvUSEc" target="_blank" class="btn btn-ghost">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         원본 시트
@@ -390,6 +391,10 @@
     <!-- MONTHLY -->
     <div class="tab-pane active" id="pane-monthly">
       <div id="monthlyFilterBar"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn btn-outline btn-sm" id="monthlyInsightBtn" onclick="runMonthlyInsight(this)">🤖 AI 인사이트</button>
+      </div>
+      <div id="monthlyInsightResult" style="display:none;background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px"></div>
       <div class="table-wrapper">
         <table>
           <thead><tr>
@@ -407,6 +412,10 @@
 
     <!-- ANNUAL -->
     <div class="tab-pane" id="pane-annual">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn btn-outline btn-sm" id="annualInsightBtn" onclick="runAnnualInsight(this)">🤖 AI 인사이트</button>
+      </div>
+      <div id="annualInsightResult" style="display:none;background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px"></div>
       <div class="table-wrapper">
         <table>
           <thead><tr>
@@ -438,8 +447,8 @@
             </div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="copyPortfolioForClaude()">📋 Claude에게 보내기</button>
-            <button class="btn btn-primary btn-sm" onclick="openPasteAnalysisModal()">📥 분석 붙여넣기</button>
+            <button class="btn btn-primary btn-sm" id="portfolioAiBtn" onclick="runPortfolioAnalysisAI(this)">🤖 AI 분석</button>
+            <button class="btn btn-outline btn-sm" onclick="openPasteAnalysisModal()">📥 붙여넣기</button>
             <button class="btn btn-outline btn-sm" onclick="renderStocksTab()">🔄 새로고침</button>
           </div>
         </div>
@@ -649,6 +658,34 @@
         <div id="tv_main_chart" class="tradingview-widget-container" style="height:480px;width:100%"></div>
       </div>
 
+      <!-- US REALTIME SECTION -->
+      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div class="chart-title">📡 미국 시장 실시간</div>
+            <div class="chart-subtitle">Yahoo Finance · S&amp;P 500 · Nasdaq · Dow Jones · 주요 종목</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="usFetchBtn" onclick="fetchUsMarketData(this)">실시간 업데이트</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div id="usCard_sp500" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">S&amp;P 500</div>
+            <div style="font-size:13px;color:var(--gray-400)">실시간 업데이트를 눌러주세요</div>
+          </div>
+          <div id="usCard_nasdaq" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">Nasdaq</div>
+            <div style="font-size:13px;color:var(--gray-400)">-</div>
+          </div>
+          <div id="usCard_dji" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);margin-bottom:4px">Dow Jones</div>
+            <div style="font-size:13px;color:var(--gray-400)">-</div>
+          </div>
+        </div>
+        <div id="usMarketResult">
+          <div class="empty-state-text" style="margin-bottom:0;font-size:12px;color:var(--gray-400);text-align:center;padding:16px">실시간 업데이트 버튼을 눌러주세요</div>
+        </div>
+      </div>
+
       <!-- CLAUDE ANALYSIS SECTION -->
       <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -659,24 +696,24 @@
               <div style="font-size:11px;color:var(--gray-400)">이 채팅창에서 "시장 분석해줘" → F5 새로고침</div>
             </div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="renderUsMarketTab()">🔄 새로고침</button>
+          <button class="btn btn-outline btn-sm" id="claudeRefreshBtn" onclick="refreshMarketAnalysis(this)">🔄 새로고침</button>
         </div>
         <!-- CLAUDE_ANALYSIS_START -->
         <div id="claudeAnalysisContent">
 
           <!-- 시장 요약 -->
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-            <div style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+            <div id="claudeCard_sp500" style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
               <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:4px">S&amp;P 500</div>
               <div style="font-size:20px;font-weight:800;color:var(--gray-900)">7,580</div>
               <div style="font-size:12px;color:var(--success);font-weight:600">▲ +0.22% · 9주 연속 상승</div>
             </div>
-            <div style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+            <div id="claudeCard_nasdaq" style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
               <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:4px">Nasdaq</div>
               <div style="font-size:20px;font-weight:800;color:var(--gray-900)">26,972</div>
               <div style="font-size:12px;color:var(--success);font-weight:600">▲ +0.2% · 5월 +8%</div>
             </div>
-            <div style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+            <div id="claudeCard_dji" style="background:var(--success-light);border:1px solid #bbf7d0;border-radius:10px;padding:14px">
               <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:4px">Dow Jones</div>
               <div style="font-size:20px;font-weight:800;color:var(--gray-900)">51,032</div>
               <div style="font-size:12px;color:var(--success);font-weight:600">▲ +0.72% · 신고가</div>
@@ -798,12 +835,15 @@
           <button class="btn btn-outline btn-sm" onclick="toggleApiSettings()">⚙️ API 키</button>
         </div>
         <div id="usApiPanel" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100)">
-          <div class="form-group">
-            <label>Alpha Vantage API 키 <span style="color:var(--danger)">*</span></label>
-            <input type="password" id="usAvKey" class="api-input" placeholder="alphavantage.co에서 무료 발급">
+          <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px">Claude API 키 <span style="font-size:10px;font-weight:400;color:var(--success)">(있으면 시장분석 자동 갱신)</span></label>
+            <input type="password" id="usClKey" class="api-input" placeholder="console.anthropic.com에서 발급">
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px">• console.anthropic.com → API Keys → Create Key</div>
           </div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:8px;line-height:1.7">
-            • <a href="https://www.alphavantage.co/support/#api-key" target="_blank" style="color:var(--primary)">alphavantage.co</a> → 이메일 입력 → 즉시 발급 (무료, 25회/일)
+          <div class="form-group">
+            <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px">Alpha Vantage API 키 <span style="font-size:10px;font-weight:400;color:var(--gray-400)">(뉴스 감성분석용)</span></label>
+            <input type="password" id="usAvKey" class="api-input" placeholder="alphavantage.co에서 무료 발급">
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px">• alphavantage.co → 이메일 입력 → 즉시 발급 (무료, 25회/일)</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px">
             <button class="btn btn-primary btn-sm" onclick="saveUsApiKeys()">저장</button>
@@ -991,12 +1031,15 @@
 
       <!-- Claude 분석 -->
       <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-          <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--gray-900)">Claude 한국시장 분석</div>
-            <div style="font-size:11px;color:var(--gray-400)">실시간 업데이트 후 자동 반영 · 참고용</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;flex-shrink:0">🤖</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--gray-900)">Claude 한국시장 분석</div>
+              <div style="font-size:11px;color:var(--gray-400)">실시간 업데이트 후 자동 반영 · 참고용</div>
+            </div>
           </div>
+          <button class="btn btn-outline btn-sm" id="krRefreshBtn" onclick="refreshKrMarketAnalysis(this)">🔄 새로고침</button>
         </div>
 
         <!-- 시장 요약 카드 (실시간 업데이트로 자동 갱신) -->
@@ -1138,6 +1181,7 @@
           <span>🤖 Claude AI 분석 · 참고용, 투자 손실 책임 없음</span>
           <span id="krAnalysisTime">갱신: 실시간 업데이트 후 표시</span>
         </div>
+        <div id="krAiAnalysisResult" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100)"></div>
       </div>
     </div>
 
@@ -1148,7 +1192,7 @@
         <div style="background:linear-gradient(135deg,var(--primary),var(--purple));border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;flex-shrink:0">💬</div>
         <div style="flex:1">
           <div style="font-size:15px;font-weight:700;color:var(--gray-900)">AI 투자 챗봇</div>
-          <div style="font-size:12px;color:var(--gray-600);margin-top:2px">포트폴리오 컨텍스트 자동 포함 · claude.ai 연동 · 자유롭게 질문하세요</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:2px" id="chatbotSubtitle">포트폴리오 컨텍스트 자동 포함 · 자유롭게 질문하세요</div>
         </div>
         <button class="btn btn-outline btn-sm" onclick="clearChatHistory()" style="flex-shrink:0">🗑️ 대화 초기화</button>
       </div>
@@ -1199,7 +1243,7 @@
           보내기
         </button>
       </div>
-      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:center">Enter로 전송 · Shift+Enter 줄바꿈 · 클립보드 복사 후 claude.ai에서 답변 받기</div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:center" id="chatHintText">Enter로 전송 · Shift+Enter 줄바꿈</div>
     </div>
 
   </div>
@@ -1328,6 +1372,54 @@
   </div>
 </div>
 
+<!-- API 키 설정 -->
+<div class="overlay" id="apiKeyOverlay" onclick="if(event.target===this)closeModal('apiKeyOverlay')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ API 키 설정</span>
+      <button class="modal-close" onclick="closeModal('apiKeyOverlay')">✕</button>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px">
+        Claude API 키 <span style="font-size:10px;font-weight:400;color:var(--success)">(등록 시 모든 탭 AI 자동 분석)</span>
+      </label>
+      <input type="password" id="apiKeyClInput" class="api-input" placeholder="sk-ant-...">
+      <div style="font-size:11px;color:var(--gray-400);margin-top:4px">• console.anthropic.com → API Keys → Create Key</div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:var(--gray-700);display:block;margin-bottom:4px">
+        Alpha Vantage API 키 <span style="font-size:10px;font-weight:400;color:var(--gray-400)">(미국시장 뉴스 감성분석용)</span>
+      </label>
+      <input type="password" id="apiKeyAvInput" class="api-input" placeholder="alphavantage.co에서 무료 발급">
+      <div style="font-size:11px;color:var(--gray-400);margin-top:4px">• alphavantage.co → 이메일 입력 → 즉시 발급 (무료, 25회/일)</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-outline" onclick="closeModal('apiKeyOverlay')">취소</button>
+      <button class="btn btn-primary" onclick="saveApiKeys()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 미국 시장 분석 붙여넣기 -->
+<div class="overlay" id="pasteMarketOverlay" onclick="if(event.target===this)closeModal('pasteMarketOverlay')">
+  <div class="modal modal-wide" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title">📥 시장 분석 붙여넣기</span>
+      <button class="modal-close" onclick="closeModal('pasteMarketOverlay')">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px;line-height:1.6">
+      claude.ai에서 받은 시장 분석 내용을 아래에 붙여넣으세요.<br>
+      <span style="font-size:11px;color:var(--gray-400)">마크다운 그대로 붙여넣으면 자동으로 렌더링됩니다.</span>
+    </p>
+    <textarea id="pasteMarketInput" placeholder="claude.ai 분석 내용을 여기에 붙여넣으세요..."
+      style="width:100%;height:280px;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-outline" onclick="closeModal('pasteMarketOverlay')">취소</button>
+      <button class="btn btn-primary" onclick="applyMarketAnalysis()">분석 적용</button>
+    </div>
+  </div>
+</div>
+
 <!-- 구글 시트 연결 -->
 <div class="overlay" id="sheetSetupOverlay" onclick="if(event.target===this)closeModal('sheetSetupOverlay')">
   <div class="modal" style="max-width:460px">
@@ -1423,6 +1515,7 @@ const PALETTE = ['#2563eb','#7c3aed','#16a34a','#d97706','#dc2626','#0891b2','#d
 // STATE
 // ══════════════════════════════════════════
 let monthly = [], annual = [], stocks = [];
+let lastKrQuotes = null;
 let currentTab = 'monthly';
 let monthlyYearFilter = null;
 let chartYearFilter = CURRENT_YEAR;
@@ -2285,6 +2378,8 @@ function renderUsMarketTab() {
   // 저장된 API 키 복원
   const ak = document.getElementById('usAvKey');
   if (ak) ak.value = localStorage.getItem('us_av_key') || '';
+  const ck = document.getElementById('usClKey');
+  if (ck) ck.value = localStorage.getItem('cl_api_key') || '';
 }
 
 let krMarketInitialized = false;
@@ -2344,6 +2439,7 @@ async function fetchKrMarketData(btn) {
     const results = await Promise.all(syms.map(fetchChart));
     const quotes = {};
     results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
+    lastKrQuotes = quotes;
 
     const fmt    = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
@@ -2461,12 +2557,404 @@ async function fetchKrMarketData(btn) {
   }
 }
 
+// ── 공통 Claude API 헬퍼 ─────────────────────────────────
+async function callClaudeAPI({ prompt, messages, system, maxTokens = 1500 }) {
+  const clApiKey = localStorage.getItem('cl_api_key') || '';
+  if (!clApiKey) throw new Error('NO_KEY');
+  const body = { model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens,
+    messages: messages || [{ role: 'user', content: prompt }] };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': clApiKey, 'anthropic-version': '2023-06-01',
+      'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    const msg = e.error?.message || `API 오류 ${res.status}`;
+    if (res.status === 402 || /credit|balance|billing/i.test(msg)) throw new Error('NO_KEY');
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR')) {
+  targetEl.style.display = 'block';
+  targetEl.innerHTML = `
+    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${html}</div>
+    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;text-align:right">🤖 Claude AI · 분석 시각: ${now}</div>`;
+}
+
+// ── 챗봇 직접 API 호출 ────────────────────────────────────
+async function callChatbotWithAPI(question, assistantMsgId) {
+  const includePortfolio = document.getElementById('chatIncludePortfolio')?.checked ?? true;
+  let system = '당신은 자산관리 AI 어시스턴트입니다. 마크다운으로 답변하고 이모지를 적절히 사용하세요. 투자 손실에 대한 책임이 없음을 간략히 고지하세요.';
+  if (includePortfolio && stocks.length) {
+    const total = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+    const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+    const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+    const list   = stocks.map(r => { const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+      return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
+    system += `\n\n사용자 포트폴리오:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}`;
+  }
+  const continueMode = document.getElementById('chatContinueMode')?.checked ?? false;
+  let messages;
+  if (continueMode) {
+    const completed = chatHistory.filter(m => !m.pending && m.text && m.id !== assistantMsgId);
+    messages = completed.slice(-10).map(m => ({ role: m.role, content: m.text }));
+    messages.push({ role: 'user', content: question });
+  } else {
+    messages = [{ role: 'user', content: question }];
+  }
+  try {
+    const text = await callClaudeAPI({ messages, system, maxTokens: 2000 });
+    const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
+    if (idx !== -1) { chatHistory[idx].text = text; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
+    saveChatHistoryLocal(); renderChatMessages();
+  } catch(e) {
+    const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
+    if (e.message === 'NO_KEY') {
+      // 크레딧 부족 또는 키 없음 → 기존 클립보드 방식으로 전환
+      if (idx !== -1) { chatHistory[idx].pending = true; delete chatHistory[idx].apiPending; }
+      saveChatHistoryLocal(); renderChatMessages();
+      buildAndCopyPrompt(question, assistantMsgId);
+    } else {
+      if (idx !== -1) { chatHistory[idx].text = `⚠️ API 오류: ${e.message}`; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
+      saveChatHistoryLocal(); renderChatMessages();
+      toast('API 오류: ' + e.message, 'error');
+    }
+  }
+}
+
+// ── 챗봇 탭 로드 시 상태 표시 ─────────────────────────────
+function showInlinePaste(targetId, prompt) {
+  navigator.clipboard.writeText(prompt).catch(()=>{});
+  window.open('https://claude.ai', '_blank');
+  const el = document.getElementById(targetId);
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--gray-600);margin-bottom:8px;line-height:1.6">
+      프롬프트를 클립보드에 복사했습니다.<br>
+      <strong>claude.ai에 붙여넣기(Ctrl+V)</strong> → 답변 받기 → 아래에 붙여넣기
+    </div>
+    <textarea id="${targetId}_paste" placeholder="claude.ai 답변을 여기에 붙여넣으세요..."
+      style="width:100%;height:180px;padding:10px 12px;border:1px solid var(--gray-300);border-radius:8px;font-size:13px;outline:none;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+    <button onclick="applyInlinePaste('${targetId}')" class="btn btn-primary btn-sm" style="margin-top:8px">적용</button>`;
+  toast('클립보드에 복사됐습니다. claude.ai에 붙여넣기(Ctrl+V) 하세요', 'info');
+}
+
+function applyInlinePaste(targetId) {
+  const text = document.getElementById(targetId + '_paste')?.value.trim();
+  if (!text) { toast('내용을 붙여넣어주세요', 'error'); return; }
+  const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+  renderAiResult(html, document.getElementById(targetId));
+  toast('분석이 적용되었습니다!', 'success');
+}
+
+function openApiKeyModal() {
+  document.getElementById('apiKeyClInput').value = localStorage.getItem('cl_api_key') || '';
+  document.getElementById('apiKeyAvInput').value = localStorage.getItem('us_av_key') || '';
+  document.getElementById('apiKeyOverlay').classList.add('open');
+}
+
+function saveApiKeys() {
+  const ck = document.getElementById('apiKeyClInput').value.trim();
+  const ak = document.getElementById('apiKeyAvInput').value.trim();
+  if (ck) localStorage.setItem('cl_api_key', ck);
+  if (ak) localStorage.setItem('us_av_key', ak);
+  closeModal('apiKeyOverlay');
+  updateChatbotApiStatus();
+  toast('API 키가 저장되었습니다', 'success');
+}
+
+function updateChatbotApiStatus() {
+  const key = localStorage.getItem('cl_api_key') || '';
+  const sub = document.getElementById('chatbotSubtitle');
+  const hint = document.getElementById('chatHintText');
+  if (sub) sub.textContent = key ? '포트폴리오 컨텍스트 자동 포함 · Claude API 직접 연동 · 바로 답변' : '포트폴리오 컨텍스트 자동 포함 · API 키 없음 · 클립보드로 claude.ai 연동';
+  if (hint) hint.textContent = key ? 'Enter로 전송 · Shift+Enter 줄바꿈 · API 키 연동됨' : 'Enter로 전송 · Shift+Enter 줄바꿈 · 클립보드 복사 후 claude.ai에서 답변 받기';
+}
+
+// ── 포트폴리오 AI 분석 ────────────────────────────────────
+async function runPortfolioAnalysisAI(btn) {
+  if (!stocks.length) { toast('포트폴리오 데이터가 없습니다', 'error'); return; }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '🤖 분석 중...';
+  const total = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+  const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+  const list   = stocks.map(r => { const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+    return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
+  const prompt = `포트폴리오 현황:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}\n\n다음을 마크다운으로 작성해주세요:\n1. 포트폴리오 종합 진단 (집중도·리스크·수익률)\n2. 주의 종목 및 이유\n3. 리밸런싱 제안\n한국어로 실용적으로 작성해주세요.`;
+  try {
+    const text = await callClaudeAPI({ prompt, maxTokens: 2000 });
+    const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+    renderAiResult(html, document.getElementById('portfolioAnalysisContent'));
+    toast('포트폴리오 분석 완료!', 'success');
+  } catch(e) {
+    if (e.message === 'NO_KEY') { copyPortfolioForClaude(); toast('API 키 없음 · 클립보드로 복사했습니다. ⚙️ API 키 등록 시 자동 분석됩니다.', 'info'); }
+    else toast('분석 실패: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+// ── 한국시장 AI 분석 ──────────────────────────────────────
+async function refreshKrMarketAnalysis(btn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  let prompt = '';
+  try {
+    if (!lastKrQuotes) {
+      btn.textContent = '📡 데이터 수집 중...';
+      await fetchKrMarketData(document.getElementById('krFetchBtn'));
+    }
+    const q = lastKrQuotes || {};
+    const fmt = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
+    const chgStr = x => { const c = x?.regularMarketChangePercent||0; return `${c>=0?'+':''}${c.toFixed(2)}%`; };
+    prompt = `현재 한국 시장 실시간 데이터:\n- KOSPI: ${fmt(q['^KS11']?.regularMarketPrice)} (${chgStr(q['^KS11'])})\n- KOSDAQ: ${fmt(q['^KQ11']?.regularMarketPrice)} (${chgStr(q['^KQ11'])})\n- 원/달러: ${fmt(q['KRW=X']?.regularMarketPrice)}원 (${chgStr(q['KRW=X'])})\n- 삼성전자: ${fmt(q['005930.KS']?.regularMarketPrice)}원 (${chgStr(q['005930.KS'])})\n- SK하이닉스: ${fmt(q['000660.KS']?.regularMarketPrice)}원 (${chgStr(q['000660.KS'])})\n\n다음 3개 섹션을 마크다운으로 작성해주세요:\n### 🔥 지금 핵심 이슈\n한국 시장 핵심 이슈 2~3개\n### 🚀 추천 종목/ETF TOP 5\n티커, 추천이유, 투자판단\n### ⚠️ 현재 주의사항\n리스크 2~3개\n한국어로 간결하게 작성해주세요.`;
+    btn.textContent = '🤖 분석 중...';
+    const text = await callClaudeAPI({ prompt });
+    const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+    renderAiResult(html, document.getElementById('krAiAnalysisResult'));
+    toast('한국 시장 분석 완료!', 'success');
+  } catch(e) {
+    if (e.message === 'NO_KEY') showInlinePaste('krAiAnalysisResult', prompt);
+    else toast('오류: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+// ── 월별 AI 인사이트 ──────────────────────────────────────
+async function runMonthlyInsight(btn) {
+  if (!monthly.length) { toast('월별 데이터를 먼저 불러주세요', 'error'); return; }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '🤖 분석 중...';
+  const recent = monthly.slice(-12);
+  const lines = recent.map(r => `${r.월}: 자산 ${w(r.자산||0)} | 순자산 ${w(r.순자산||0)} | 금융자산 ${w(r.금융자산||0)} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`).join('\n');
+  const prompt = `최근 ${recent.length}개월 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 자산·순자산 증감 추세 요약\n2. 눈에 띄는 패턴·이상치\n3. 개선 방향 제안\n한국어로 간결하게 작성해주세요.`;
+  try {
+    const text = await callClaudeAPI({ prompt });
+    const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+    renderAiResult(html, document.getElementById('monthlyInsightResult'));
+    toast('월별 인사이트 완료!', 'success');
+  } catch(e) {
+    if (e.message === 'NO_KEY') showInlinePaste('monthlyInsightResult', prompt);
+    else toast('분석 실패: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+// ── 연간 AI 인사이트 ──────────────────────────────────────
+async function runAnnualInsight(btn) {
+  if (!annual.length) { toast('연간 데이터를 먼저 불러주세요', 'error'); return; }
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '🤖 분석 중...';
+  const lines = annual.map(r => `${r.연도||r.월}: 자산 ${w(r.자산||0)} | 순자산 ${w(r.순자산||0)} | 금융자산 ${w(r.금융자산||0)}`).join('\n');
+  const prompt = `연간 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 연도별 자산 성장 추세\n2. 성장률 및 목표 달성 여부\n3. 장기 전략 제안\n한국어로 간결하게 작성해주세요.`;
+  try {
+    const text = await callClaudeAPI({ prompt });
+    const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+    renderAiResult(html, document.getElementById('annualInsightResult'));
+    toast('연간 인사이트 완료!', 'success');
+  } catch(e) {
+    if (e.message === 'NO_KEY') showInlinePaste('annualInsightResult', prompt);
+    else toast('분석 실패: ' + e.message, 'error');
+  } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+function buildMarketPrompt(quotes) {
+  const nameMap = { '^GSPC':'S&P 500', '^IXIC':'Nasdaq', '^DJI':'Dow Jones', '^RUT':'Russell 2000' };
+  const fmt = (v, dec=2) => v != null ? v.toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}) : '-';
+  const chgStr = q => { const c = q.regularMarketChangePercent||0; return `${c>=0?'+':''}${c.toFixed(2)}%`; };
+  const indices = quotes.filter(q => q.symbol.startsWith('^'));
+  const stocks  = quotes.filter(q => !q.symbol.startsWith('^'));
+  const idxLines   = indices.map(q => `- ${nameMap[q.symbol]||q.symbol}: ${fmt(q.regularMarketPrice)} (${chgStr(q)})`).join('\n');
+  const stockLines = stocks.map(q => `- ${q.symbol}: $${fmt(q.regularMarketPrice)} (${chgStr(q)}) · 52주 $${(q.fiftyTwoWeekLow||0).toFixed(0)}~$${(q.fiftyTwoWeekHigh||0).toFixed(0)}`).join('\n');
+  const now = new Date().toLocaleString('ko-KR');
+  return `아래는 ${now} 기준 미국 시장 실시간 데이터입니다. 이를 바탕으로 투자 대시보드용 시장 분석을 한국어로 작성해주세요.
+
+## 현재 지수
+${idxLines}
+
+## 주요 종목
+${stockLines}
+
+다음 3개 섹션을 마크다운으로 작성해주세요:
+
+### 🔥 지금 핵심 이슈
+현재 시장 상황을 반영한 핵심 이슈 2~3개 (bullet point)
+
+### 🚀 추천 종목 TOP 5
+각 종목: 티커, 추천 이유 (1~2문장), 투자 판단 (강력매수/매수/분할매수/관망 중 하나)
+
+### ⚠️ 현재 주의사항
+주요 리스크 2~3개 (bullet point)
+
+간결하고 실용적으로, 오늘 날짜 기준으로 작성해주세요.`;
+}
+
+function applyMarketAnalysisText(text) {
+  const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
+  const now  = new Date().toLocaleString('ko-KR');
+  document.getElementById('claudeAnalysisContent').innerHTML = `
+    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${html}</div>
+    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+      <span>🤖 Claude AI 분석 · Yahoo Finance 실시간 데이터 기반</span>
+      <span>분석 시각: ${now}</span>
+    </div>`;
+}
+
+async function refreshMarketAnalysis(btn) {
+  const clApiKey = localStorage.getItem('cl_api_key') || '';
+  const orig = btn.textContent;
+  btn.disabled = true;
+  let prompt = '';
+  try {
+    btn.textContent = '📡 시장 데이터 수집 중...';
+    const quotes = await fetchMarketData();
+    prompt = buildMarketPrompt(quotes);
+
+    if (clApiKey) {
+      btn.textContent = '🤖 Claude 분석 중...';
+      const text = await callClaudeAPI({ prompt, maxTokens: 1500 });
+      applyMarketAnalysisText(text);
+      toast('시장 분석 자동 업데이트 완료!', 'success');
+    } else {
+      await navigator.clipboard.writeText(prompt);
+      window.open('https://claude.ai', '_blank');
+      document.getElementById('pasteMarketOverlay').classList.add('open');
+      toast('API 키가 없어 클립보드로 복사했습니다. claude.ai에 붙여넣기(Ctrl+V) 하세요', 'info');
+    }
+  } catch(e) {
+    if (e.message === 'NO_KEY') {
+      await navigator.clipboard.writeText(prompt).catch(()=>{});
+      window.open('https://claude.ai', '_blank');
+      document.getElementById('pasteMarketOverlay').classList.add('open');
+      toast('크레딧 부족 · 클립보드로 복사했습니다. claude.ai에 붙여넣기(Ctrl+V) 하세요', 'info');
+    } else {
+      toast('오류: ' + e.message, 'error');
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+function applyMarketAnalysis() {
+  const text = document.getElementById('pasteMarketInput').value.trim();
+  if (!text) { toast('내용을 붙여넣어주세요', 'error'); return; }
+  applyMarketAnalysisText(text);
+  closeModal('pasteMarketOverlay');
+  document.getElementById('pasteMarketInput').value = '';
+  toast('시장 분석이 업데이트되었습니다!', 'success');
+}
+
+async function fetchUsMarketData(btn) {
+  btn.disabled = true; btn.textContent = '불러오는 중...';
+  const resultEl = document.getElementById('usMarketResult');
+  const indexSyms = ['^GSPC', '^IXIC', '^DJI'];
+  const stockSyms = ['NVDA', 'MSFT', 'AMD', 'META', 'AAPL', 'MU'];
+  const allSyms = [...indexSyms, ...stockSyms];
+  try {
+    const proxy = 'https://corsproxy.io/?';
+    const fetchChart = async (sym) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo`;
+      const r = await fetch(proxy + encodeURIComponent(url));
+      const d = await r.json();
+      const res  = d?.chart?.result?.[0];
+      const meta = res?.meta;
+      if (!meta) return null;
+      const price  = meta.regularMarketPrice;
+      const closes = res?.indicators?.quote?.[0]?.close?.filter(c => c != null) || [];
+      const last   = closes[closes.length - 1];
+      const prev   = closes[closes.length - 2];
+      const isLive = last && Math.abs(price - last) / last > 0.0005;
+      const chgNum = isLive ? price - last : (last && prev ? last - prev : 0);
+      const chgBase= isLive ? last : prev;
+      const chgPct = chgBase ? chgNum / chgBase * 100 : 0;
+      return { symbol: sym, shortName: meta.longName || meta.shortName || sym, regularMarketPrice: price, regularMarketChangePercent: chgPct, fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh, fiftyTwoWeekLow: meta.fiftyTwoWeekLow, closes };
+    };
+    const results = await Promise.all(allSyms.map(fetchChart));
+    const quotes = {};
+    results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
+
+    const fmt    = (v, dec=2) => v != null ? v.toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}) : '-';
+    const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
+    const arrow  = c => c >= 0 ? '▲' : '▼';
+
+    const updateCard = (id, label, value, chgPct, colorClass, borderColor) => {
+      const el = document.getElementById(id); if (!el) return;
+      const up = chgPct >= 0;
+      el.style.cssText = `background:var(--${colorClass}-light);border:1px solid ${borderColor};border-radius:10px;padding:14px`;
+      el.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--${colorClass});margin-bottom:4px">${label}</div><div style="font-size:20px;font-weight:800;color:var(--gray-900)">${value}</div><div style="font-size:12px;color:var(--${up?'success':'danger'});font-weight:600">${arrow(chgPct)} ${Math.abs(chgPct||0).toFixed(2)}%</div>`;
+    };
+
+    const sp = quotes['^GSPC'], nd = quotes['^IXIC'], dj = quotes['^DJI'];
+    if (sp) updateCard('usCard_sp500', 'S&P 500',   fmt(sp.regularMarketPrice), sp.regularMarketChangePercent, 'success', '#bbf7d0');
+    if (nd) updateCard('usCard_nasdaq','Nasdaq',    fmt(nd.regularMarketPrice), nd.regularMarketChangePercent, 'primary', '#bfdbfe');
+    if (dj) updateCard('usCard_dji',  'Dow Jones', fmt(dj.regularMarketPrice), dj.regularMarketChangePercent, dj.regularMarketChangePercent>=0?'success':'danger', dj.regularMarketChangePercent>=0?'#bbf7d0':'#fecaca');
+
+    // Claude 분석 섹션 지수 카드도 동기화
+    if (sp) updateCard('claudeCard_sp500', 'S&P 500',   fmt(sp.regularMarketPrice), sp.regularMarketChangePercent, 'success', '#bbf7d0');
+    if (nd) updateCard('claudeCard_nasdaq','Nasdaq',    fmt(nd.regularMarketPrice), nd.regularMarketChangePercent, 'success', '#bbf7d0');
+    if (dj) updateCard('claudeCard_dji',  'Dow Jones', fmt(dj.regularMarketPrice), dj.regularMarketChangePercent, dj.regularMarketChangePercent>=0?'success':'danger', dj.regularMarketChangePercent>=0?'#bbf7d0':'#fecaca');
+
+    const rows = stockSyms.map(sym => {
+      const q = quotes[sym]; if (!q) return '';
+      const chg = q.regularMarketChangePercent || 0;
+      const cid = `usSparkline_${sym}`;
+      return `<tr>
+        <td style="padding:9px 12px;font-weight:700;color:var(--gray-900)">${sym}</td>
+        <td style="padding:9px 12px;text-align:right">$${fmt(q.regularMarketPrice)}</td>
+        <td style="padding:9px 12px;text-align:right"><span class="${chgCls(chg)}">${chg>=0?'+':''}${chg.toFixed(2)}%</span></td>
+        <td style="padding:9px 12px;text-align:right;color:var(--gray-400);font-size:11px">$${(q.fiftyTwoWeekLow||0).toFixed(0)} ~ $${(q.fiftyTwoWeekHigh||0).toFixed(0)}</td>
+        <td style="padding:6px 12px"><div style="width:90px;height:36px"><canvas id="${cid}"></canvas></div></td>
+      </tr>`;
+    }).join('');
+
+    resultEl.innerHTML = `
+      <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--gray-200);margin-bottom:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:480px">
+          <thead><tr style="background:var(--gray-50)">
+            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">종목</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">현재가</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">전일대비</th>
+            <th style="padding:8px 12px;text-align:right;color:var(--gray-500);font-size:11px;font-weight:600">52주 범위</th>
+            <th style="padding:8px 12px;text-align:left;color:var(--gray-500);font-size:11px;font-weight:600">1개월 추이</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);text-align:right">갱신: ${new Date().toLocaleString('ko-KR')}</div>`;
+
+    setTimeout(() => {
+      stockSyms.forEach(sym => {
+        const q = quotes[sym]; if (!q?.closes?.length) return;
+        const canvas = document.getElementById(`usSparkline_${sym}`); if (!canvas) return;
+        const up = q.regularMarketChangePercent >= 0;
+        new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: { labels: q.closes.map((_,i)=>i), datasets: [{ data: q.closes, borderColor: up?'#16a34a':'#dc2626', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 }] },
+          options: { animation: false, plugins: { legend:{display:false}, tooltip:{enabled:false} }, scales: { x:{display:false}, y:{display:false} }, responsive: true, maintainAspectRatio: false }
+        });
+      });
+    }, 50);
+
+    toast('미국 시장 데이터 갱신 완료!', 'success');
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:16px">데이터 로드 실패: ${e.message}</div>`;
+    toast('미국 시장 데이터 로드 실패', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔄 새로고침';
+  }
+}
+
 function toggleApiSettings() {
   const p = document.getElementById('usApiPanel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 
 function saveUsApiKeys() {
+  const ck = document.getElementById('usClKey').value.trim();
+  if (ck) { localStorage.setItem('cl_api_key', ck); }
   const ak = document.getElementById('usAvKey').value.trim();
   if (ak) { localStorage.setItem('us_av_key', ak); }
   document.getElementById('usApiPanel').style.display = 'none';
@@ -2639,7 +3127,7 @@ function switchTab(tab) {
   if (tab==='stocks')   renderStocksTab();
   if (tab==='usmarket') renderUsMarketTab();
   if (tab==='krmarket') renderKrMarketTab();
-  if (tab==='chatbot')  renderChatTab();
+  if (tab==='chatbot')  { renderChatTab(); updateChatbotApiStatus(); }
 }
 
 function renderTabActions() {
@@ -3024,6 +3512,18 @@ function renderChatMessages() {
           <div class="chat-time" style="display:flex;gap:6px;align-items:center">${delBtn(msg.id, true)}<span>${timeStr}</span></div>
         </div>`;
     } else if (msg.pending) {
+      if (msg.apiPending) {
+        return `
+          <div class="chat-msg chat-msg-assistant">
+            <div class="chat-bubble chat-bubble-pending">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="display:flex;gap:3px">${[0,150,300].map(d=>`<div style="width:6px;height:6px;background:var(--primary);border-radius:50%;animation:chatDot 1.2s ease-in-out ${d}ms infinite"></div>`).join('')}</div>
+                <span style="font-size:12px;font-weight:600;color:var(--primary)">AI 답변 생성 중...</span>
+              </div>
+            </div>
+            <div class="chat-time"><span>${timeStr}</span></div>
+          </div>`;
+      }
       return `
         <div class="chat-msg chat-msg-assistant">
           <div class="chat-bubble chat-bubble-pending">
@@ -3062,6 +3562,9 @@ function sendChatMessage() {
   const userMsg = { id: 'u_' + now, role: 'user', text, timestamp: now };
   const assistantMsg = { id: 'a_' + now, role: 'assistant', text: '', pending: true, timestamp: now + 1 };
 
+  const clApiKey = localStorage.getItem('cl_api_key') || '';
+  if (clApiKey) assistantMsg.apiPending = true;
+
   chatHistory.push(userMsg, assistantMsg);
   saveChatHistoryLocal();
   renderChatMessages();
@@ -3070,7 +3573,11 @@ function sendChatMessage() {
   input.style.height = '48px';
   input.placeholder = '예: 젠슨황이 방한해서 회장들 만난다는데 관련주 추천해줘';
 
-  buildAndCopyPrompt(text, assistantMsg.id);
+  if (clApiKey) {
+    callChatbotWithAPI(text, assistantMsg.id);
+  } else {
+    buildAndCopyPrompt(text, assistantMsg.id);
+  }
 }
 
 function buildAndCopyPrompt(question) {
