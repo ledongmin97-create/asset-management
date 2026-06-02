@@ -2687,7 +2687,7 @@ async function runPortfolioAnalysisAI(btn) {
   const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
   const list   = stocks.map(r => { const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
     return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
-  const prompt = `포트폴리오 현황:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}\n\n다음을 마크다운으로 작성해주세요:\n1. 포트폴리오 종합 진단 (집중도·리스크·수익률)\n2. 주의 종목 및 이유\n3. 리밸런싱 제안\n한국어로 실용적으로 작성해주세요. 마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
+  const prompt = `포트폴리오 현황:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}\n\n다음을 마크다운으로 작성해주세요:\n1. 포트폴리오 종합 진단 (집중도·리스크·수익률)\n2. 주의 종목 및 이유\n3. 리밸런싱 제안\n한국어로 실용적으로 작성해주세요. 대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
   try {
     const text = await callClaudeAPI({ prompt, maxTokens: 2000 });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
@@ -2712,7 +2712,7 @@ async function refreshKrMarketAnalysis(btn) {
     const q = lastKrQuotes || {};
     const fmt = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgStr = x => { const c = x?.regularMarketChangePercent||0; return `${c>=0?'+':''}${c.toFixed(2)}%`; };
-    prompt = `현재 한국 시장 실시간 데이터:\n- KOSPI: ${fmt(q['^KS11']?.regularMarketPrice)} (${chgStr(q['^KS11'])})\n- KOSDAQ: ${fmt(q['^KQ11']?.regularMarketPrice)} (${chgStr(q['^KQ11'])})\n- 원/달러: ${fmt(q['KRW=X']?.regularMarketPrice)}원 (${chgStr(q['KRW=X'])})\n- 삼성전자: ${fmt(q['005930.KS']?.regularMarketPrice)}원 (${chgStr(q['005930.KS'])})\n- SK하이닉스: ${fmt(q['000660.KS']?.regularMarketPrice)}원 (${chgStr(q['000660.KS'])})\n\n다음 3개 섹션을 마크다운으로 작성해주세요:\n### 🔥 지금 핵심 이슈\n한국 시장 핵심 이슈 2~3개\n### 🚀 추천 종목/ETF TOP 5\n티커, 추천이유, 투자판단\n### ⚠️ 현재 주의사항\n리스크 2~3개\n한국어로 간결하게 작성해주세요. 마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
+    prompt = `현재 한국 시장 실시간 데이터:\n- KOSPI: ${fmt(q['^KS11']?.regularMarketPrice)} (${chgStr(q['^KS11'])})\n- KOSDAQ: ${fmt(q['^KQ11']?.regularMarketPrice)} (${chgStr(q['^KQ11'])})\n- 원/달러: ${fmt(q['KRW=X']?.regularMarketPrice)}원 (${chgStr(q['KRW=X'])})\n- 삼성전자: ${fmt(q['005930.KS']?.regularMarketPrice)}원 (${chgStr(q['005930.KS'])})\n- SK하이닉스: ${fmt(q['000660.KS']?.regularMarketPrice)}원 (${chgStr(q['000660.KS'])})\n\n다음 3개 섹션을 마크다운으로 작성해주세요:\n### 🔥 지금 핵심 이슈\n한국 시장 핵심 이슈 2~3개\n### 🚀 추천 종목/ETF TOP 5\n티커, 추천이유, 투자판단\n### ⚠️ 현재 주의사항\n리스크 2~3개\n한국어로 간결하게 작성해주세요. 대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
     btn.textContent = '🤖 분석 중...';
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
@@ -2731,7 +2731,7 @@ async function runMonthlyInsight(btn) {
   btn.disabled = true; btn.textContent = '🤖 분석 중...';
   const recent = monthly.slice(-12);
   const lines = recent.map(r => `${r.월}: 자산 ${w(r.자산||0)} | 순자산 ${w(r.순자산||0)} | 금융자산 ${w(r.금융자산||0)} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`).join('\n');
-  const prompt = `최근 ${recent.length}개월 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 자산·순자산 증감 추세 요약\n2. 눈에 띄는 패턴·이상치\n3. 개선 방향 제안\n한국어로 간결하게 작성해주세요. 마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
+  const prompt = `최근 ${recent.length}개월 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 자산·순자산 증감 추세 요약\n2. 눈에 띄는 패턴·이상치\n3. 개선 방향 제안\n한국어로 간결하게 작성해주세요. 대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
   try {
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
@@ -2749,7 +2749,7 @@ async function runAnnualInsight(btn) {
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = '🤖 분석 중...';
   const lines = annual.map(r => `${r.연도||r.월}: 자산 ${w(r.자산||0)} | 순자산 ${w(r.순자산||0)} | 금융자산 ${w(r.금융자산||0)}`).join('\n');
-  const prompt = `연간 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 연도별 자산 성장 추세\n2. 성장률 및 목표 달성 여부\n3. 장기 전략 제안\n한국어로 간결하게 작성해주세요. 마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
+  const prompt = `연간 자산 현황:\n${lines}\n\n다음을 마크다운으로 작성해주세요:\n1. 연도별 자산 성장 추세\n2. 성장률 및 목표 달성 여부\n3. 장기 전략 제안\n한국어로 간결하게 작성해주세요. 대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
   try {
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
@@ -2789,7 +2789,7 @@ ${stockLines}
 ### ⚠️ 현재 주의사항
 주요 리스크 2~3개 (bullet point)
 
-간결하고 실용적으로, 오늘 날짜 기준으로 작성해주세요. 마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
+간결하고 실용적으로, 오늘 날짜 기준으로 작성해주세요. 대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.`;
 }
 
 function applyMarketAnalysisText(text) {
@@ -3633,7 +3633,7 @@ function buildAndCopyPrompt(question) {
     '',
     '---',
     '위 맥락을 참고해서 질문에 답해줘.',
-    '마크다운으로 깔끔하게 작성하고, 이모지 적절히 사용해줘.',
+    '대시보드가 마크다운을 파싱해서 렌더링하므로 헤더(##, ###)·표·이모지를 모두 살려서 깔끔한 마크다운으로 작성해줘.',
     '투자 관련 내용은 참고용이며 투자 손실 책임 없음을 간단히 고지해줘.',
   ].join('\n');
 
