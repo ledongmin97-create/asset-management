@@ -2399,6 +2399,13 @@ function renderUsMarketTab() {
         if (el) { el.innerHTML = data.html; el.style.cssText = data.style; }
       });
     }
+    const ex = JSON.parse(localStorage.getItem('us_extra_cache') || 'null');
+    if (ex) {
+      const grid = document.getElementById('liveQuoteGrid');
+      if (ex.liveQuote?.html && grid) { grid.innerHTML = ex.liveQuote.html; grid.style.display = 'grid'; }
+      const res = document.getElementById('analysisResult');
+      if (ex.analysis?.html && res) { res.innerHTML = ex.analysis.html; res.style.display = 'block'; }
+    }
   } catch(e) {}
 }
 
@@ -3312,6 +3319,13 @@ async function runAiAnalysis() {
         <span>📡 Yahoo Finance + Alpha Vantage · ⏱ 15분 지연</span>
         <span>갱신: ${new Date().toLocaleString('ko-KR')}</span>
       </div>`;
+
+    // 캐시 저장 (liveQuoteGrid + analysisResult)
+    const usExtraCache = {
+      liveQuote: { html: document.getElementById('liveQuoteGrid').innerHTML },
+      analysis:  { html: resultEl.innerHTML }
+    };
+    localStorage.setItem('us_extra_cache', JSON.stringify(usExtraCache));
 
     btn.textContent = '🔄 새로고침';
     toast('데이터 갱신 완료!', 'success');
@@ -4399,12 +4413,6 @@ async function adminDeleteUser(uid, username) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const krCache = localStorage.getItem('kr_market_cache_html');
-  if (krCache) document.getElementById('krMarketResult').innerHTML = krCache;
-  const usCache = localStorage.getItem('us_market_cache_html');
-  if (usCache) document.getElementById('usMarketResult').innerHTML = usCache;
-});
 </script>
 </body>
 </html>
