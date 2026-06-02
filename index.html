@@ -278,6 +278,14 @@
     .chat-send-btn:hover{background:var(--primary-dark);}
     .chat-send-btn:disabled{opacity:.5;cursor:not-allowed;}
     @keyframes chatDot{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+
+    /* AI 투자 판단 배지 */
+    .ai-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; white-space:nowrap; }
+    .ai-badge-strong-buy { background:#fff3e0; color:#e65100; }
+    .ai-badge-buy        { background:#e8f5e9; color:#2e7d32; }
+    .ai-badge-split      { background:#e3f2fd; color:#1565c0; }
+    .ai-badge-hold       { background:#f5f5f5; color:#757575; }
+    .ai-badge-sell       { background:#fce4ec; color:#c62828; }
   </style>
 </head>
 <body>
@@ -2580,11 +2588,39 @@ async function callClaudeAPI({ prompt, messages, system, maxTokens = 1500 }) {
   return data.content?.[0]?.text || '';
 }
 
-function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR')) {
+const aiResultsRawMd = {};
+
+function copyAiResult(id) {
+  const md = aiResultsRawMd[id] || '';
+  navigator.clipboard.writeText(md)
+    .then(() => toast('마크다운이 복사됐습니다!', 'success'))
+    .catch(() => toast('복사 실패', 'error'));
+}
+
+function postProcessAiHtml(html) {
+  html = html.replace(/강력매수/g, '[[STRONG_BUY]]');
+  html = html.replace(/분할매수/g, '[[SPLIT_BUY]]');
+  html = html.replace(/매수/g, '<span class="ai-badge ai-badge-buy">매수</span>');
+  html = html.replace(/\[\[STRONG_BUY\]\]/g, '<span class="ai-badge ai-badge-strong-buy">강력매수</span>');
+  html = html.replace(/\[\[SPLIT_BUY\]\]/g, '<span class="ai-badge ai-badge-split">분할매수</span>');
+  html = html.replace(/관망/g, '<span class="ai-badge ai-badge-hold">관망</span>');
+  html = html.replace(/매도/g, '<span class="ai-badge ai-badge-sell">매도</span>');
+  return html;
+}
+
+function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR'), rawMd = '') {
+  if (rawMd && targetEl.id) aiResultsRawMd[targetEl.id] = rawMd;
+  const processedHtml = postProcessAiHtml(html);
+  const copyBtn = (rawMd && targetEl.id)
+    ? `<button onclick="copyAiResult('${targetEl.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>`
+    : '';
   targetEl.style.display = 'block';
   targetEl.innerHTML = `
-    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${html}</div>
-    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;text-align:right">🤖 Claude AI · 분석 시각: ${now}</div>`;
+    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
+    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
+      <span>${copyBtn}</span>
+      <span>🤖 Claude AI · 분석 시각: ${now}</span>
+    </div>`;
 }
 
 // ── 챗봇 직접 API 호출 ────────────────────────────────────
@@ -2649,7 +2685,7 @@ function applyInlinePaste(targetId) {
   const text = document.getElementById(targetId + '_paste')?.value.trim();
   if (!text) { toast('내용을 붙여넣어주세요', 'error'); return; }
   const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-  renderAiResult(html, document.getElementById(targetId));
+  renderAiResult(html, document.getElementById(targetId), undefined, text);
   toast('분석이 적용되었습니다!', 'success');
 }
 
@@ -2691,7 +2727,7 @@ async function runPortfolioAnalysisAI(btn) {
   try {
     const text = await callClaudeAPI({ prompt, maxTokens: 2000 });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-    renderAiResult(html, document.getElementById('portfolioAnalysisContent'));
+    renderAiResult(html, document.getElementById('portfolioAnalysisContent'), undefined, text);
     toast('포트폴리오 분석 완료!', 'success');
   } catch(e) {
     if (e.message === 'NO_KEY') { copyPortfolioForClaude(); toast('API 키 없음 · 클립보드로 복사했습니다. ⚙️ API 키 등록 시 자동 분석됩니다.', 'info'); }
@@ -2716,7 +2752,7 @@ async function refreshKrMarketAnalysis(btn) {
     btn.textContent = '🤖 분석 중...';
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-    renderAiResult(html, document.getElementById('krAiAnalysisResult'));
+    renderAiResult(html, document.getElementById('krAiAnalysisResult'), undefined, text);
     toast('한국 시장 분석 완료!', 'success');
   } catch(e) {
     if (e.message === 'NO_KEY') showInlinePaste('krAiAnalysisResult', prompt);
@@ -2735,7 +2771,7 @@ async function runMonthlyInsight(btn) {
   try {
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-    renderAiResult(html, document.getElementById('monthlyInsightResult'));
+    renderAiResult(html, document.getElementById('monthlyInsightResult'), undefined, text);
     toast('월별 인사이트 완료!', 'success');
   } catch(e) {
     if (e.message === 'NO_KEY') showInlinePaste('monthlyInsightResult', prompt);
@@ -2753,7 +2789,7 @@ async function runAnnualInsight(btn) {
   try {
     const text = await callClaudeAPI({ prompt });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-    renderAiResult(html, document.getElementById('annualInsightResult'));
+    renderAiResult(html, document.getElementById('annualInsightResult'), undefined, text);
     toast('연간 인사이트 완료!', 'success');
   } catch(e) {
     if (e.message === 'NO_KEY') showInlinePaste('annualInsightResult', prompt);
@@ -2784,7 +2820,10 @@ ${stockLines}
 현재 시장 상황을 반영한 핵심 이슈 2~3개 (bullet point)
 
 ### 🚀 추천 종목 TOP 5
-각 종목: 티커, 추천 이유 (1~2문장), 투자 판단 (강력매수/매수/분할매수/관망 중 하나)
+반드시 아래 마크다운 표 형식으로 작성해줘:
+| # | 티커 | 종목명 | 추천 이유 | 투자 판단 |
+|---|------|--------|-----------|-----------|
+투자 판단 컬럼은 반드시 강력매수/매수/분할매수/관망 중 하나만 사용.
 
 ### ⚠️ 현재 주의사항
 주요 리스크 2~3개 (bullet point)
@@ -2794,12 +2833,14 @@ ${stockLines}
 
 function applyMarketAnalysisText(text) {
   const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
-  const now  = new Date().toLocaleString('ko-KR');
+  const processedHtml = postProcessAiHtml(html);
+  aiResultsRawMd['claudeAnalysisContent'] = text;
+  const now = new Date().toLocaleString('ko-KR');
   document.getElementById('claudeAnalysisContent').innerHTML = `
-    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${html}</div>
-    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-      <span>🤖 Claude AI 분석 · Yahoo Finance 실시간 데이터 기반</span>
-      <span>분석 시각: ${now}</span>
+    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
+    <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
+      <button onclick="copyAiResult('claudeAnalysisContent')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>
+      <span>🤖 Claude AI 분석 · Yahoo Finance 실시간 데이터 기반 · ${now}</span>
     </div>`;
 }
 
