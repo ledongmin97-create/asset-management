@@ -2420,8 +2420,8 @@ async function fetchKrMarketData(btn) {
   try {
     const proxy = 'https://corsproxy.io/?';
     const fetchChart = async (sym) => {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo`;
-      const r = await fetch(proxy + encodeURIComponent(url));
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo&_=${Date.now()}`;
+      const r = await fetch(proxy + encodeURIComponent(url), { cache: 'no-store' });
       const d = await r.json();
       const res  = d?.chart?.result?.[0];
       const meta = res?.meta;
@@ -2897,8 +2897,8 @@ async function fetchUsMarketData(btn) {
   try {
     const proxy = 'https://corsproxy.io/?';
     const fetchChart = async (sym) => {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo`;
-      const r = await fetch(proxy + encodeURIComponent(url));
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1mo&_=${Date.now()}`;
+      const r = await fetch(proxy + encodeURIComponent(url), { cache: 'no-store' });
       const d = await r.json();
       const res  = d?.chart?.result?.[0];
       const meta = res?.meta;
@@ -3006,8 +3006,8 @@ async function fetchMarketData() {
   const proxy = 'https://corsproxy.io/?';
   const symbols = encodeURIComponent('^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL');
   const fields  = 'shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow';
-  const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=${fields}`;
-  const res = await fetch(proxy + encodeURIComponent(url));
+  const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=${fields}&_=${Date.now()}`;
+  const res = await fetch(proxy + encodeURIComponent(url), { cache: 'no-store' });
   const data = await res.json();
   return data?.quoteResponse?.result || [];
 }
