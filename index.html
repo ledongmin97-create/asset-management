@@ -2682,14 +2682,21 @@ function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR')
 // ── 챗봇 직접 API 호출 ────────────────────────────────────
 async function callChatbotWithAPI(question, assistantMsgId) {
   const includePortfolio = document.getElementById('chatIncludePortfolio')?.checked ?? true;
-  let system = '당신은 자산관리 AI 어시스턴트입니다. 마크다운으로 답변하고 이모지를 적절히 사용하세요. 투자 손실에 대한 책임이 없음을 간략히 고지하세요.';
+  let system = ANALYSIS_SYSTEM;
   if (includePortfolio && stocks.length) {
     const total = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
     const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
     const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
-    const list   = stocks.map(r => { const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
-      return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
-    system += `\n\n사용자 포트폴리오:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}`;
+    const sectorMap = {};
+    stocks.forEach(r => { const c = r.카테고리||'기타'; sectorMap[c]=(sectorMap[c]||0)+(r.평가금액||0); });
+    const sectorLines = Object.entries(sectorMap).sort((a,b)=>b[1]-a[1])
+      .map(([c,v])=>`${c} ${w(v)} (${total?(v/total*100).toFixed(1):0}%)`).join(' | ');
+    const list = stocks.map(r => {
+      const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+      const gain = r.수익금!=null?(r.수익금>=0?`+${w(r.수익금)}`:w(r.수익금)):'-';
+      return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 원금 ${w(r.투자원금||0)} | 손익 ${gain} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
+    }).join('\n');
+    system += `\n\n## 사용자 포트폴리오 현황\n총 ${w(total)} | 원금 ${w(cost)} | 손익 ${profit>=0?'+':''}${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n섹터: ${sectorLines}\n\n${list}`;
   }
   const continueMode = document.getElementById('chatContinueMode')?.checked ?? false;
   let messages;
