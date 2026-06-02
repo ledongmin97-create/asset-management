@@ -3978,6 +3978,14 @@ async function loadFromFirestore() {
 fbAuth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
+    // 이전 공용 API 키 → 계정별 키로 마이그레이션
+    ['cl_api_key', 'us_av_key'].forEach(oldKey => {
+      const newKey = oldKey === 'cl_api_key' ? clApiKeyName() : avKeyName();
+      if (!localStorage.getItem(newKey) && localStorage.getItem(oldKey)) {
+        localStorage.setItem(newKey, localStorage.getItem(oldKey));
+        localStorage.removeItem(oldKey);
+      }
+    });
     const metaSnap = await fbDb.collection('users').doc(user.uid).get();
     const username = user.email.split('@')[0];
     if (!metaSnap.exists) {
