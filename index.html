@@ -2762,6 +2762,24 @@ function updateChatbotApiStatus() {
   if (hint) hint.textContent = key ? 'Enter로 전송 · Shift+Enter 줄바꿈 · API 키 연동됨' : 'Enter로 전송 · Shift+Enter 줄바꿈 · 클립보드 복사 후 claude.ai에서 답변 받기';
 }
 
+// ── 분석 공통 시스템 프롬프트 ─────────────────────────────
+const ANALYSIS_SYSTEM = `당신은 15년 경력의 전문 포트폴리오 매니저이자 시장 분석가입니다. 한국 개인 투자자의 자산관리 대시보드에서 실시간 데이터를 바탕으로 깊이 있는 분석을 제공합니다.
+
+답변 원칙:
+- 반드시 한국어로 작성
+- 단순 나열이 아닌 인과관계·맥락·근거를 포함한 깊이 있는 분석
+- 구체적 수치, 비율, 비교 데이터를 적극 활용
+- 실행 가능한 구체적 액션 아이템 제시 (막연한 "분산투자" 수준 금지)
+- 현재 매크로 환경과 연결한 맥락 제공
+
+출력 형식 (반드시 준수):
+- 각 섹션: 이모지 + ### 헤더
+- 수치·비교 데이터: 마크다운 표(|헤더|헤더|) 형식
+- 핵심 키워드·수치: **굵게** 강조
+- 주요 요약: 블록인용(>) 활용
+- 섹션 간: 구분선(---) 삽입
+- 마지막: 투자 손실 책임 없음 블록인용 고지`;
+
 // ── 포트폴리오 AI 분석 ────────────────────────────────────
 async function runPortfolioAnalysisAI(btn) {
   if (!stocks.length) { toast('포트폴리오 데이터가 없습니다', 'error'); return; }
@@ -2770,11 +2788,64 @@ async function runPortfolioAnalysisAI(btn) {
   const total = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
   const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
   const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
-  const list   = stocks.map(r => { const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
-    return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
-  const prompt = `포트폴리오 현황:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}\n\n다음을 마크다운으로 작성해주세요:\n1. 포트폴리오 종합 진단 (집중도·리스크·수익률)\n2. 주의 종목 및 이유\n3. 리밸런싱 제안\n한국어로 실용적으로 작성해주세요. [자산관리 대시보드](https://ledongmin97-create.github.io/asset-management/) 대시보드 마크다운 렌더링에 최적화해서 작성해줘. 반드시 지켜야 할 형식: ① 각 섹션은 이모지+###헤더로 구분 ② 수치·종목·비교 데이터는 마크다운 표(|헤더|헤더|) 형식으로 정리 ③ 핵심 키워드·수치는 **굵게** 강조 ④ 주요 요약은 블록인용(>) 활용 ⑤ 섹션 간 구분선(---) 삽입. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 마지막에 블록인용(>)으로 고지해줘.`;
+  const totalReturn = cost > 0 ? (profit/cost*100).toFixed(2) : 0;
+  const list = stocks.map(r => {
+    const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+    const gain = r.수익금 != null ? (r.수익금 >= 0 ? `+${w(r.수익금)}` : w(r.수익금)) : '-';
+    return `${r.종목명} | ${r.카테고리||'-'} | 평가 ${w(r.평가금액)} (비중 ${pct}%) | 원금 ${w(r.투자원금||0)} | 손익 ${gain} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
+  }).join('\n');
+  const sectorMap = {};
+  stocks.forEach(r => {
+    const cat = r.카테고리 || '기타';
+    sectorMap[cat] = (sectorMap[cat]||0) + (r.평가금액||0);
+  });
+  const sectorLines = Object.entries(sectorMap).sort((a,b)=>b[1]-a[1])
+    .map(([cat, val]) => `${cat}: ${w(val)} (${total?(val/total*100).toFixed(1):0}%)`).join(' | ');
+
+  const prompt = `## 포트폴리오 현황 (${new Date().toLocaleDateString('ko-KR')} 기준)
+
+### 전체 요약
+- 총 평가금액: ${w(total)}
+- 투자 원금: ${w(cost)}
+- 총 손익: ${profit>=0?'+':''}${w(profit)} (수익률 **${totalReturn}%**)
+- 환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD
+
+### 섹터별 비중
+${sectorLines}
+
+### 종목별 상세
+| 종목 | 카테고리 | 평가금액 | 비중 | 원금 | 손익 | 수익률 |
+|------|----------|----------|------|------|------|--------|
+${stocks.map(r => {
+    const pct = total ? ((r.평가금액||0)/total*100).toFixed(1) : '0';
+    const gain = r.수익금 != null ? (r.수익금 >= 0 ? `+${w(r.수익금)}` : w(r.수익금)) : '-';
+    const ret = r.수익률!=null ? (r.수익률>=0?'+':'')+r.수익률.toFixed(2)+'%' : '-';
+    return `| ${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} | ${pct}% | ${w(r.투자원금||0)} | ${gain} | ${ret} |`;
+  }).join('\n')}
+
+---
+
+위 포트폴리오를 전문 포트폴리오 매니저 관점에서 심층 분석해주세요:
+
+### 🔍 포트폴리오 종합 진단
+- 집중도 리스크 (상위 3종목 비중, HHI 지수 관점)
+- 섹터 편중 여부 및 분산 수준 평가
+- 현재 수익률의 시장 대비 평가 (S&P500, KOSPI 대비)
+- 환율 노출 수준과 리스크
+
+### ⚠️ 주의 종목 심층 분석
+각 주의 종목에 대해: 왜 문제인지 + 현재 매크로 환경과의 연관성 + 구체적 대응 방안
+
+### ⚖️ 리밸런싱 액션 플랜
+- 즉시 조치가 필요한 항목 (비중 조절, 손절/익절 기준)
+- 추가 매수 관심 종목 및 적정 비중
+- 현금 비중 권고 (현재 시장 환경 고려)
+
+### 📈 향후 3개월 포트폴리오 전략
+현재 매크로 환경 (금리·달러·지정학)을 고려한 구체적 방향성 제시`;
+
   try {
-    const text = await callClaudeAPI({ prompt, maxTokens: 4000 });
+    const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 4000 });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
     renderAiResult(html, document.getElementById('portfolioAnalysisContent'), undefined, text);
     toast('포트폴리오 분석 완료!', 'success');
@@ -2797,9 +2868,36 @@ async function refreshKrMarketAnalysis(btn) {
     const q = lastKrQuotes || {};
     const fmt = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgStr = x => { const c = x?.regularMarketChangePercent||0; return `${c>=0?'+':''}${c.toFixed(2)}%`; };
-    prompt = `현재 한국 시장 실시간 데이터:\n- KOSPI: ${fmt(q['^KS11']?.regularMarketPrice)} (${chgStr(q['^KS11'])})\n- KOSDAQ: ${fmt(q['^KQ11']?.regularMarketPrice)} (${chgStr(q['^KQ11'])})\n- 원/달러: ${fmt(q['KRW=X']?.regularMarketPrice)}원 (${chgStr(q['KRW=X'])})\n- 삼성전자: ${fmt(q['005930.KS']?.regularMarketPrice)}원 (${chgStr(q['005930.KS'])})\n- SK하이닉스: ${fmt(q['000660.KS']?.regularMarketPrice)}원 (${chgStr(q['000660.KS'])})\n\n다음 3개 섹션을 마크다운으로 작성해주세요:\n### 🔥 지금 핵심 이슈\n한국 시장 핵심 이슈 2~3개\n### 🚀 추천 종목/ETF TOP 5\n티커, 추천이유, 투자판단\n### ⚠️ 현재 주의사항\n리스크 2~3개\n한국어로 간결하게 작성해주세요. [자산관리 대시보드](https://ledongmin97-create.github.io/asset-management/) 대시보드 마크다운 렌더링에 최적화해서 작성해줘. 반드시 지켜야 할 형식: ① 각 섹션은 이모지+###헤더로 구분 ② 수치·종목·비교 데이터는 마크다운 표(|헤더|헤더|) 형식으로 정리 ③ 핵심 키워드·수치는 **굵게** 강조 ④ 주요 요약은 블록인용(>) 활용 ⑤ 섹션 간 구분선(---) 삽입. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 마지막에 블록인용(>)으로 고지해줘.`;
+    prompt = `## 한국 시장 실시간 데이터 (${new Date().toLocaleString('ko-KR')} 기준)
+
+| 지표 | 현재가 | 등락 |
+|------|--------|------|
+| KOSPI | **${fmt(q['^KS11']?.regularMarketPrice)}** | ${chgStr(q['^KS11'])} |
+| KOSDAQ | **${fmt(q['^KQ11']?.regularMarketPrice)}** | ${chgStr(q['^KQ11'])} |
+| 원/달러 | **${fmt(q['KRW=X']?.regularMarketPrice)}원** | ${chgStr(q['KRW=X'])} |
+| 삼성전자 | **${fmt(q['005930.KS']?.regularMarketPrice)}원** | ${chgStr(q['005930.KS'])} |
+| SK하이닉스 | **${fmt(q['000660.KS']?.regularMarketPrice)}원** | ${chgStr(q['000660.KS'])} |
+
+위 데이터와 현재 글로벌 매크로 환경을 종합하여 한국 시장을 심층 분석해주세요:
+
+### 🔥 현재 시장의 핵심 드라이버
+지수 움직임의 근본 원인 분석 (단순 등락 서술 금지 — 왜 이런 움직임이 나왔는지 원인과 배경 설명)
+
+### 📊 섹터별 온도차
+현재 강세/약세 섹터와 그 이유, 외국인·기관 수급 흐름
+
+### 🚀 지금 주목할 종목/ETF TOP 5
+| # | 종목/티커 | 추천 근거 | 단기 목표가 | 투자 판단 |
+|---|-----------|-----------|-------------|-----------|
+(투자 판단: 강력매수/매수/분할매수/관망 중 하나)
+
+### ⚠️ 지금 당장 경계해야 할 리스크
+구체적 시나리오와 수치 포함 (막연한 "글로벌 불확실성" 수준 금지)
+
+### 🎯 이번 주 트레이딩 전략
+단기·중기 포지션 방향성과 구체적 진입 레벨 제시`;
     btn.textContent = '🤖 분석 중...';
-    const text = await callClaudeAPI({ prompt });
+    const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
     renderAiResult(html, document.getElementById('krAiAnalysisResult'), undefined, text);
     toast('한국 시장 분석 완료!', 'success');
@@ -2855,29 +2953,47 @@ function buildMarketPrompt(quotes) {
   const idxLines   = indices.map(q => `- ${nameMap[q.symbol]||q.symbol}: ${fmt(q.regularMarketPrice)} (${chgStr(q)})`).join('\n');
   const stockLines = stocks.map(q => `- ${q.symbol}: $${fmt(q.regularMarketPrice)} (${chgStr(q)}) · 52주 $${(q.fiftyTwoWeekLow||0).toFixed(0)}~$${(q.fiftyTwoWeekHigh||0).toFixed(0)}`).join('\n');
   const now = new Date().toLocaleString('ko-KR');
-  return `아래는 ${now} 기준 미국 시장 실시간 데이터입니다. 이를 바탕으로 투자 대시보드용 시장 분석을 한국어로 작성해주세요.
+  const hi52 = q => q.fiftyTwoWeekHigh ? `$${(q.fiftyTwoWeekHigh).toFixed(0)}` : '-';
+  const lo52 = q => q.fiftyTwoWeekLow  ? `$${(q.fiftyTwoWeekLow).toFixed(0)}`  : '-';
+  const pos52 = q => {
+    if (!q.fiftyTwoWeekHigh || !q.fiftyTwoWeekLow) return '-';
+    const pct = ((q.regularMarketPrice - q.fiftyTwoWeekLow) / (q.fiftyTwoWeekHigh - q.fiftyTwoWeekLow) * 100);
+    return `${pct.toFixed(0)}%`;
+  };
+  const idxTable = `| 지수 | 현재가 | 등락 |
+|------|--------|------|
+${indices.map(q=>`| **${nameMap[q.symbol]||q.symbol}** | ${fmt(q.regularMarketPrice)} | ${chgStr(q)} |`).join('\n')}`;
+  const stockTable = `| 티커 | 현재가 | 등락 | 52주 저점 | 52주 고점 | 52주 위치 |
+|------|--------|------|-----------|-----------|-----------|
+${stocks.map(q=>`| **${q.symbol}** | $${fmt(q.regularMarketPrice)} | ${chgStr(q)} | ${lo52(q)} | ${hi52(q)} | ${pos52(q)} |`).join('\n')}`;
+  return `## 미국 시장 실시간 데이터 (${now} 기준)
 
-## 현재 지수
-${idxLines}
+### 주요 지수
+${idxTable}
 
-## 주요 종목
-${stockLines}
+### 주요 종목 (52주 레인지 포함)
+${stockTable}
 
-다음 3개 섹션을 마크다운으로 작성해주세요:
+---
 
-### 🔥 지금 핵심 이슈
-현재 시장 상황을 반영한 핵심 이슈 2~3개 (bullet point)
+위 실시간 데이터와 현재 글로벌 매크로 환경을 종합하여 미국 시장을 심층 분석해주세요:
 
-### 🚀 추천 종목 TOP 5
-반드시 아래 마크다운 표 형식으로 작성해줘:
-| # | 티커 | 종목명 | 추천 이유 | 투자 판단 |
-|---|------|--------|-----------|-----------|
-투자 판단 컬럼은 반드시 강력매수/매수/분할매수/관망 중 하나만 사용.
+### 🔥 지금 시장을 움직이는 핵심 드라이버
+단순 등락 서술 금지 — 왜 이런 흐름인지 원인(연준·실적·지정학·수급 등)과 배경을 구체적으로 분석
 
-### ⚠️ 현재 주의사항
-주요 리스크 2~3개 (bullet point)
+### 📊 현재 섹터 로테이션 분석
+어느 섹터로 자금이 이동 중인지, 그 이유, 얼마나 지속될지
 
-간결하고 실용적으로, 오늘 날짜 기준으로 작성해주세요. [자산관리 대시보드](https://ledongmin97-create.github.io/asset-management/) 대시보드 마크다운 렌더링에 최적화해서 작성해줘. 반드시 지켜야 할 형식: ① 각 섹션은 이모지+###헤더로 구분 ② 수치·종목·비교 데이터는 마크다운 표(|헤더|헤더|) 형식으로 정리 ③ 핵심 키워드·수치는 **굵게** 강조 ④ 주요 요약은 블록인용(>) 활용 ⑤ 섹션 간 구분선(---) 삽입. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 마지막에 블록인용(>)으로 고지해줘.`;
+### 🚀 지금 주목할 종목 TOP 5
+| # | 티커 | 추천 근거 | 현재가 대비 목표가 | 투자 판단 |
+|---|------|-----------|--------------------|-----------|
+(투자 판단: 강력매수/매수/분할매수/관망 중 하나, 52주 위치를 진입 근거로 활용)
+
+### ⚠️ 지금 경계해야 할 리스크 시나리오
+구체적 트리거(지표·이벤트·수치)와 그 발생 시 예상 충격 포함
+
+### 🎯 이번 주 미국장 전략
+단기 포지션 방향과 핵심 모니터링 지표 (CPI·고용·실적 발표 등) 제시`;
 }
 
 function applyMarketAnalysisText(text) {
@@ -2906,7 +3022,7 @@ async function refreshMarketAnalysis(btn) {
 
     if (clApiKey) {
       btn.textContent = '🤖 Claude 분석 중...';
-      const text = await callClaudeAPI({ prompt, maxTokens: 1500 });
+      const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 4000 });
       applyMarketAnalysisText(text);
       toast('시장 분석 자동 업데이트 완료!', 'success');
     } else {
