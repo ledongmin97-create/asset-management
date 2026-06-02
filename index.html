@@ -2668,17 +2668,17 @@ async function callChatbotWithAPI(question, assistantMsgId) {
     const text = await callClaudeAPI({ messages, system, maxTokens: 4000 });
     const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
     if (idx !== -1) { chatHistory[idx].text = text; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
-    saveChatHistoryLocal(); renderChatMessages();
+    saveChatHistory(); renderChatMessages();
   } catch(e) {
     const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
     if (e.message === 'NO_KEY') {
       // 크레딧 부족 또는 키 없음 → 기존 클립보드 방식으로 전환
       if (idx !== -1) { chatHistory[idx].pending = true; delete chatHistory[idx].apiPending; }
-      saveChatHistoryLocal(); renderChatMessages();
+      saveChatHistory(); renderChatMessages();
       buildAndCopyPrompt(question, assistantMsgId);
     } else {
       if (idx !== -1) { chatHistory[idx].text = `⚠️ API 오류: ${e.message}`; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
-      saveChatHistoryLocal(); renderChatMessages();
+      saveChatHistory(); renderChatMessages();
       toast('API 오류: ' + e.message, 'error');
     }
   }
@@ -3517,19 +3517,43 @@ function chatStorageKey() {
 function clApiKeyName() { return currentUser ? `cl_api_key_${currentUser.uid}` : 'cl_api_key'; }
 function avKeyName()    { return currentUser ? `us_av_key_${currentUser.uid}`  : 'us_av_key';  }
 
-function loadChatHistory() {
-  try {
-    const raw = localStorage.getItem(chatStorageKey());
-    chatHistory = raw ? JSON.parse(raw) : [];
-  } catch(e) { chatHistory = []; }
+async function loadChatHistory() {
+  if (currentUser) {
+    try {
+      const snap = await fbDb.collection('userData').doc(currentUser.uid).get();
+      const data = snap.data();
+      chatHistory = (data && Array.isArray(data.chatHistory)) ? data.chatHistory : [];
+      if (!chatHistory.length) {
+        const raw = localStorage.getItem(chatStorageKey());
+        if (raw) {
+          try {
+            chatHistory = JSON.parse(raw);
+            await saveChatHistory();
+            localStorage.removeItem(chatStorageKey());
+          } catch(e) { chatHistory = []; }
+        }
+      }
+    } catch(e) { chatHistory = []; }
+  } else {
+    try {
+      const raw = localStorage.getItem(chatStorageKey());
+      chatHistory = raw ? JSON.parse(raw) : [];
+    } catch(e) { chatHistory = []; }
+  }
 }
 
-function saveChatHistoryLocal() {
-  try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
+async function saveChatHistory() {
+  if (currentUser) {
+    try {
+      await fbDb.collection('userData').doc(currentUser.uid).update({ chatHistory });
+    } catch(e) {}
+  } else {
+    try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
+  }
 }
 
-function renderChatTab() {
-  loadChatHistory();
+async function renderChatTab() {
+  await loadChatHistory();
   renderChatMessages();
   const cb = document.getElementById('chatIncludePortfolio');
   if (cb) {
@@ -3632,7 +3656,7 @@ function sendChatMessage() {
   if (clApiKey) assistantMsg.apiPending = true;
 
   chatHistory.push(userMsg, assistantMsg);
-  saveChatHistoryLocal();
+  saveChatHistory();
   renderChatMessages();
 
   input.value = '';
@@ -3739,7 +3763,7 @@ function savePasteChatResponse() {
   const idx = chatHistory.findIndex(m => m.id === msgId);
   if (idx !== -1) {
     chatHistory[idx] = { ...chatHistory[idx], text, pending: false, timestamp: Date.now() };
-    saveChatHistoryLocal();
+    saveChatHistory();
   }
   closePasteChatModal();
   renderChatMessages();
@@ -3760,14 +3784,14 @@ function deleteChatMessage(msgId, deletePair=false) {
   } else {
     chatHistory.splice(idx, 1);
   }
-  saveChatHistoryLocal();
+  saveChatHistory();
   renderChatMessages();
 }
 
 function clearChatHistory() {
   if (!confirm('대화 기록을 모두 삭제할까요?')) return;
   chatHistory = [];
-  saveChatHistoryLocal();
+  saveChatHistory();
   renderChatMessages();
 }
 
