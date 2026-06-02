@@ -2385,9 +2385,9 @@ function renderUsMarketTab() {
 
   // 저장된 API 키 복원
   const ak = document.getElementById('usAvKey');
-  if (ak) ak.value = localStorage.getItem('us_av_key') || '';
+  if (ak) ak.value = localStorage.getItem(avKeyName()) || '';
   const ck = document.getElementById('usClKey');
-  if (ck) ck.value = localStorage.getItem('cl_api_key') || '';
+  if (ck) ck.value = localStorage.getItem(clApiKeyName()) || '';
 }
 
 let krMarketInitialized = false;
@@ -2567,10 +2567,10 @@ async function fetchKrMarketData(btn) {
 }
 
 // ── 공통 Claude API 헬퍼 ─────────────────────────────────
-async function callClaudeAPI({ prompt, messages, system, maxTokens = 1500 }) {
-  const clApiKey = localStorage.getItem('cl_api_key') || '';
+async function callClaudeAPI({ prompt, messages, system, maxTokens = 4000 }) {
+  const clApiKey = localStorage.getItem(clApiKeyName()) || '';
   if (!clApiKey) throw new Error('NO_KEY');
-  const body = { model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens,
+  const body = { model: 'claude-sonnet-4-6', max_tokens: maxTokens,
     messages: messages || [{ role: 'user', content: prompt }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -2665,7 +2665,7 @@ async function callChatbotWithAPI(question, assistantMsgId) {
     messages = [{ role: 'user', content: question }];
   }
   try {
-    const text = await callClaudeAPI({ messages, system, maxTokens: 2000 });
+    const text = await callClaudeAPI({ messages, system, maxTokens: 4000 });
     const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
     if (idx !== -1) { chatHistory[idx].text = text; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
     saveChatHistoryLocal(); renderChatMessages();
@@ -2710,23 +2710,23 @@ function applyInlinePaste(targetId) {
 }
 
 function openApiKeyModal() {
-  document.getElementById('apiKeyClInput').value = localStorage.getItem('cl_api_key') || '';
-  document.getElementById('apiKeyAvInput').value = localStorage.getItem('us_av_key') || '';
+  document.getElementById('apiKeyClInput').value = localStorage.getItem(clApiKeyName()) || '';
+  document.getElementById('apiKeyAvInput').value = localStorage.getItem(avKeyName()) || '';
   document.getElementById('apiKeyOverlay').classList.add('open');
 }
 
 function saveApiKeys() {
   const ck = document.getElementById('apiKeyClInput').value.trim();
   const ak = document.getElementById('apiKeyAvInput').value.trim();
-  if (ck) localStorage.setItem('cl_api_key', ck);
-  if (ak) localStorage.setItem('us_av_key', ak);
+  if (ck) localStorage.setItem(clApiKeyName(), ck);
+  if (ak) localStorage.setItem(avKeyName(), ak);
   closeModal('apiKeyOverlay');
   updateChatbotApiStatus();
   toast('API 키가 저장되었습니다', 'success');
 }
 
 function updateChatbotApiStatus() {
-  const key = localStorage.getItem('cl_api_key') || '';
+  const key = localStorage.getItem(clApiKeyName()) || '';
   const sub = document.getElementById('chatbotSubtitle');
   const hint = document.getElementById('chatHintText');
   if (sub) sub.textContent = key ? '포트폴리오 컨텍스트 자동 포함 · Claude API 직접 연동 · 바로 답변' : '포트폴리오 컨텍스트 자동 포함 · API 키 없음 · 클립보드로 claude.ai 연동';
@@ -2745,7 +2745,7 @@ async function runPortfolioAnalysisAI(btn) {
     return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`; }).join('\n');
   const prompt = `포트폴리오 현황:\n총 ${w(total)} | 원금 ${w(cost)} | 수익 ${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n\n${list}\n\n다음을 마크다운으로 작성해주세요:\n1. 포트폴리오 종합 진단 (집중도·리스크·수익률)\n2. 주의 종목 및 이유\n3. 리밸런싱 제안\n한국어로 실용적으로 작성해주세요. [자산관리 대시보드](https://ledongmin97-create.github.io/asset-management/) 대시보드 마크다운 렌더링에 최적화해서 작성해줘. 반드시 지켜야 할 형식: ① 각 섹션은 이모지+###헤더로 구분 ② 수치·종목·비교 데이터는 마크다운 표(|헤더|헤더|) 형식으로 정리 ③ 핵심 키워드·수치는 **굵게** 강조 ④ 주요 요약은 블록인용(>) 활용 ⑤ 섹션 간 구분선(---) 삽입. 투자 관련 내용은 참고용이며 투자 손실 책임 없음을 마지막에 블록인용(>)으로 고지해줘.`;
   try {
-    const text = await callClaudeAPI({ prompt, maxTokens: 2000 });
+    const text = await callClaudeAPI({ prompt, maxTokens: 4000 });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
     renderAiResult(html, document.getElementById('portfolioAnalysisContent'), undefined, text);
     toast('포트폴리오 분석 완료!', 'success');
@@ -2866,7 +2866,7 @@ function applyMarketAnalysisText(text) {
 }
 
 async function refreshMarketAnalysis(btn) {
-  const clApiKey = localStorage.getItem('cl_api_key') || '';
+  const clApiKey = localStorage.getItem(clApiKeyName()) || '';
   const orig = btn.textContent;
   btn.disabled = true;
   let prompt = '';
@@ -3017,9 +3017,9 @@ function toggleApiSettings() {
 
 function saveUsApiKeys() {
   const ck = document.getElementById('usClKey').value.trim();
-  if (ck) { localStorage.setItem('cl_api_key', ck); }
+  if (ck) { localStorage.setItem(clApiKeyName(), ck); }
   const ak = document.getElementById('usAvKey').value.trim();
-  if (ak) { localStorage.setItem('us_av_key', ak); }
+  if (ak) { localStorage.setItem(avKeyName(), ak); }
   document.getElementById('usApiPanel').style.display = 'none';
   toast('API 키 저장됨', 'success');
 }
@@ -3061,7 +3061,7 @@ function renderLiveQuotes(quotes) {
 }
 
 async function runAiAnalysis() {
-  const avKey = localStorage.getItem('us_av_key') || '';
+  const avKey = localStorage.getItem(avKeyName()) || '';
   if (!avKey) {
     document.getElementById('usApiPanel').style.display = 'block';
     toast('Alpha Vantage API 키를 먼저 입력해주세요', 'error');
@@ -3514,6 +3514,9 @@ function chatStorageKey() {
   return currentUser ? `chatHistory_${currentUser.uid}` : 'chatHistory_guest';
 }
 
+function clApiKeyName() { return currentUser ? `cl_api_key_${currentUser.uid}` : 'cl_api_key'; }
+function avKeyName()    { return currentUser ? `us_av_key_${currentUser.uid}`  : 'us_av_key';  }
+
 function loadChatHistory() {
   try {
     const raw = localStorage.getItem(chatStorageKey());
@@ -3625,7 +3628,7 @@ function sendChatMessage() {
   const userMsg = { id: 'u_' + now, role: 'user', text, timestamp: now };
   const assistantMsg = { id: 'a_' + now, role: 'assistant', text: '', pending: true, timestamp: now + 1 };
 
-  const clApiKey = localStorage.getItem('cl_api_key') || '';
+  const clApiKey = localStorage.getItem(clApiKeyName()) || '';
   if (clApiKey) assistantMsg.apiPending = true;
 
   chatHistory.push(userMsg, assistantMsg);
