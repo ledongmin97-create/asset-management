@@ -2440,6 +2440,39 @@ function renderKrMarketTab() {
         const el = document.getElementById(id);
         if (el) { el.innerHTML = data.html; el.style.cssText = data.style; }
       });
+      // 캔버스 차트 복원
+      if (c.chartData) setTimeout(() => {
+        const { sam, hyn, samUp, hynUp } = c.chartData;
+        // 스파크라인
+        [['005930_KS', sam, samUp], ['000660_KS', hyn, hynUp]].forEach(([key, closes, up]) => {
+          const canvas = document.getElementById(`krSparkline_${key}`);
+          if (canvas && closes.length) new Chart(canvas.getContext('2d'), {
+            type:'line', data:{ labels:closes.map((_,i)=>i), datasets:[{ data:closes, borderColor:up?'#16a34a':'#dc2626', borderWidth:1.5, pointRadius:0, fill:false, tension:0.3 }] },
+            options:{ animation:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}}, responsive:true, maintainAspectRatio:false }
+          });
+        });
+        // 상세 비교 차트
+        const detailCanvas = document.getElementById('krDetailChart');
+        if (detailCanvas && (sam.length || hyn.length)) {
+          const norm = closes => { if (!closes.length) return []; const b=closes[0]; return closes.map(c=>+((c-b)/b*100).toFixed(2)); };
+          const len = Math.max(sam.length, hyn.length);
+          const labels = Array.from({length:len},(_,i)=>i===0?'1개월 전':i===len-1?'현재':'');
+          new Chart(detailCanvas.getContext('2d'), {
+            type:'line',
+            data:{ labels, datasets:[
+              { label:'삼성전자', data:norm(sam), borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.08)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
+              { label:'SK하이닉스', data:norm(hyn), borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.08)', borderWidth:2, pointRadius:0, fill:true, tension:0.3 },
+            ]},
+            options:{ animation:false, responsive:true, maintainAspectRatio:false,
+              interaction:{mode:'index',intersect:false},
+              plugins:{ legend:{position:'top',labels:{font:{size:12},usePointStyle:true,pointStyleWidth:8}},
+                tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y>=0?'+':''}${ctx.parsed.y}%`}} },
+              scales:{ x:{grid:{display:false},ticks:{font:{size:10},color:'#94a3b8',maxTicksLimit:4}},
+                y:{grid:{color:'#f1f5f9'},ticks:{font:{size:10},color:'#94a3b8',callback:v=>(v>=0?'+':'')+v+'%'},border:{display:false}} }
+            }
+          });
+        }
+      }, 50);
     }
   } catch(e) {}
 }
@@ -2537,7 +2570,14 @@ async function fetchKrMarketData(btn) {
         <div style="position:relative;height:200px"><canvas id="krDetailChart"></canvas></div>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:8px;text-align:right">갱신: ${new Date().toLocaleString('ko-KR')} · ⏱ 15분 지연</div>`;
-    const krCache = { result: resultEl.innerHTML, cards: {} };
+    const krCache = { result: resultEl.innerHTML, cards: {},
+      chartData: {
+        sam: quotes['005930.KS']?.closes || [],
+        hyn: quotes['000660.KS']?.closes || [],
+        samUp: (quotes['005930.KS']?.regularMarketChangePercent||0) >= 0,
+        hynUp: (quotes['000660.KS']?.regularMarketChangePercent||0) >= 0,
+      }
+    };
     ['krCard_kospi','krCard_kosdaq','krCard_rate'].forEach(id => {
       const el = document.getElementById(id);
       if (el) krCache.cards[id] = { html: el.innerHTML, style: el.style.cssText };
