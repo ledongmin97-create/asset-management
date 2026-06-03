@@ -2588,7 +2588,7 @@ async function fetchKrMarketData(btn) {
       const el = document.getElementById(id);
       if (el) krCache.cards[id] = { html: el.innerHTML, style: el.style.cssText };
     });
-    localStorage.setItem('kr_market_cache', JSON.stringify(krCache));
+    saveDeviceCache('kr_market_cache', krCache);
 
     // 스파크라인 그리기
     setTimeout(() => {
@@ -2689,6 +2689,14 @@ function postProcessAiHtml(html) {
   html = html.replace(/관망/g, '<span class="ai-badge ai-badge-hold">관망</span>');
   html = html.replace(/매도/g, '<span class="ai-badge ai-badge-sell">매도</span>');
   return html;
+}
+
+async function saveDeviceCache(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+  if (!currentUser) return;
+  try {
+    await fbDb.collection('userData').doc(currentUser.uid).update({ [`deviceCache.${key}`]: data });
+  } catch(e) {}
 }
 
 async function saveAiAnalysis(key, rawMd, timestamp) {
@@ -3203,7 +3211,7 @@ async function fetchUsMarketData(btn) {
       const el = document.getElementById(id);
       if (el) usCache.cards[id] = { html: el.innerHTML, style: el.style.cssText };
     });
-    localStorage.setItem('us_market_cache', JSON.stringify(usCache));
+    saveDeviceCache('us_market_cache', usCache);
 
     setTimeout(() => {
       stockSyms.forEach(sym => {
@@ -3385,7 +3393,7 @@ async function runAiAnalysis() {
       liveQuote: { html: document.getElementById('liveQuoteGrid').innerHTML },
       analysis:  { html: resultEl.innerHTML }
     };
-    localStorage.setItem('us_extra_cache', JSON.stringify(usExtraCache));
+    saveDeviceCache('us_extra_cache', usExtraCache);
 
     btn.textContent = '🔄 새로고침';
     toast('데이터 갱신 완료!', 'success');
@@ -3407,7 +3415,7 @@ async function runAiAnalysis() {
 // ══════════════════════════════════════════
 function switchTab(tab) {
   currentTab = tab;
-  localStorage.setItem('lastTab', tab);
+  saveDeviceCache('lastTab', tab);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   ['monthly','annual','stocks','usmarket','krmarket','chatbot'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
   renderTabActions();
@@ -4060,7 +4068,8 @@ function toast(msg,type='info'){
 function render(){
   renderSummary(); renderCharts();
   renderMonthlyTable(); renderAnnualTable();
-  const savedTab = localStorage.getItem('lastTab');
+  const savedTabRaw = localStorage.getItem('lastTab');
+  const savedTab = savedTabRaw ? (savedTabRaw.startsWith('"') ? JSON.parse(savedTabRaw) : savedTabRaw) : null;
   if (savedTab && savedTab !== 'monthly') switchTab(savedTab);
   else {
     if(currentTab==='stocks')  renderStocksTab();
@@ -4177,6 +4186,13 @@ async function loadFromFirestore() {
     stocks  = d.stocks  || [];
     gasUrl  = d.gasUrl  || '';
     if (d.sheetId) SHEET_ID = d.sheetId;
+    // 기기 캐시 복원 (다른 기기에서 저장한 시장 데이터·탭 상태)
+    const dc = d.deviceCache || {};
+    ['us_market_cache','kr_market_cache','us_extra_cache'].forEach(key => {
+      if (dc[key]) localStorage.setItem(key, JSON.stringify(dc[key]));
+    });
+    if (dc.lastTab) localStorage.setItem('lastTab', JSON.stringify(dc.lastTab));
+
     // AI 분석 결과 복원
     const ai = d.aiAnalysis || {};
     const restoreMap = {
