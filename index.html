@@ -2726,7 +2726,7 @@ function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR')
     : '';
   targetEl.style.display = 'block';
   targetEl.innerHTML = `
-    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
+    <div class="ai-result" style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
     <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
       <span>${copyBtn}</span>
       <span>🤖 Claude AI · 분석 시각: ${now}</span>
@@ -3083,7 +3083,7 @@ function applyMarketAnalysisText(text) {
   const now = new Date().toLocaleString('ko-KR');
   saveAiAnalysis('usMarket', text, now);
   document.getElementById('claudeAnalysisContent').innerHTML = `
-    <div style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
+    <div class="ai-result" style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
     <div style="font-size:11px;color:var(--gray-400);padding-top:10px;border-top:1px solid var(--gray-100);margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">
       <button onclick="copyAiResult('claudeAnalysisContent')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>
       <span>🤖 Claude AI 분석 · Yahoo Finance (⏱ 15분 지연) · ${now}</span>
