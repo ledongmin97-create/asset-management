@@ -248,11 +248,10 @@
     .ai-result li{margin-bottom:5px;}
     .ai-result strong{color:var(--gray-900);}
     .ai-result p{margin-bottom:10px;}
-    .ai-result table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;}
+    .ai-result table{width:100%;border-collapse:collapse;font-size:12px;}
     .ai-result table thead tr{background:var(--gray-50);}
-    .ai-result table th{padding:7px 10px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);white-space:nowrap;}
-    .ai-result table td{padding:7px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top;word-break:keep-all;overflow-wrap:break-word;line-height:1.6;min-width:60px;}
-    .ai-result table td:first-child{white-space:nowrap;min-width:unset;text-align:center;}
+    .ai-result table th{padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);white-space:nowrap;font-size:11px;}
+    .ai-result table td{padding:8px 12px;border-bottom:1px solid var(--gray-100);vertical-align:top;word-break:break-word;overflow-wrap:anywhere;line-height:1.65;min-width:80px;}
     .ai-result table tr:last-child td{border-bottom:none;}
     .ai-result table tr:hover td{background:var(--gray-50);}
     .api-input{width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:12px;color:var(--gray-800);outline:none;font-family:inherit;background:white;}
@@ -2690,7 +2689,7 @@ function postProcessAiHtml(html) {
   html = html.replace(/관망/g, '<span class="ai-badge ai-badge-hold">관망</span>');
   html = html.replace(/매도/g, '<span class="ai-badge ai-badge-sell">매도</span>');
   // 테이블을 overflow-x 스크롤 래퍼로 감싸기
-  html = html.replace(/<table/g, '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;"><table style="min-width:400px;"')
+  html = html.replace(/<table/g, '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;border-radius:8px;border:1px solid var(--gray-200);"><table style="min-width:500px;width:100%;"')
              .replace(/<\/table>/g, '</table></div>');
   return html;
 }
