@@ -1565,7 +1565,7 @@ function save() {
     fbDb.collection('userData').doc(currentUser.uid).set({
       monthly, annual, stocks, gasUrl,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    }, { merge: true });
   }
 }
 
