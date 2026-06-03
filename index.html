@@ -2693,11 +2693,16 @@ function postProcessAiHtml(html) {
   return html;
 }
 
-async function saveDeviceCache(key, data) {
+function saveDeviceCache(key, data) {
+  // HTML 캐시는 localStorage만 (Firestore 용량 초과 방지)
   localStorage.setItem(key, JSON.stringify(data));
+}
+
+async function saveLastTab(tab) {
+  localStorage.setItem('lastTab', JSON.stringify(tab));
   if (!currentUser) return;
   try {
-    await fbDb.collection('userData').doc(currentUser.uid).update({ [`deviceCache.${key}`]: data });
+    await fbDb.collection('userData').doc(currentUser.uid).update({ lastTab: tab });
   } catch(e) {}
 }
 
@@ -3462,7 +3467,7 @@ async function runAiAnalysis() {
 // ══════════════════════════════════════════
 function switchTab(tab) {
   currentTab = tab;
-  saveDeviceCache('lastTab', tab);
+  saveLastTab(tab);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   ['monthly','annual','stocks','usmarket','krmarket','chatbot'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
   renderTabActions();
@@ -4232,12 +4237,8 @@ async function loadFromFirestore() {
     stocks  = d.stocks  || [];
     gasUrl  = d.gasUrl  || '';
     if (d.sheetId) SHEET_ID = d.sheetId;
-    // 기기 캐시 복원 (다른 기기에서 저장한 시장 데이터·탭 상태)
-    const dc = d.deviceCache || {};
-    ['us_market_cache','kr_market_cache','us_extra_cache'].forEach(key => {
-      if (dc[key]) localStorage.setItem(key, JSON.stringify(dc[key]));
-    });
-    if (dc.lastTab) localStorage.setItem('lastTab', JSON.stringify(dc.lastTab));
+    // 마지막 탭 상태 복원
+    if (d.lastTab) localStorage.setItem('lastTab', JSON.stringify(d.lastTab));
 
     // AI 분석 결과 복원
     const ai = d.aiAnalysis || {};
