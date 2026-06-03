@@ -2747,12 +2747,19 @@ async function saveLastTab(tab) {
 }
 
 async function saveAiAnalysis(key, rawMd, timestamp) {
-  if (!currentUser || !rawMd) return;
+  if (!rawMd) return;
+  // localStorage 백업 (Firestore 와이프 대비)
+  try {
+    const cached = JSON.parse(localStorage.getItem('aiAnalysisCache') || '{}');
+    cached[key] = { rawMd, timestamp };
+    localStorage.setItem('aiAnalysisCache', JSON.stringify(cached));
+  } catch(e) {}
+  if (!currentUser) return;
   try {
     await fbDb.collection('userData').doc(currentUser.uid).update({
       [`aiAnalysis.${key}`]: { rawMd, timestamp }
     });
-  } catch(e) { /* 저장 실패는 무시 */ }
+  } catch(e) {}
 }
 
 function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR'), rawMd = '') {
@@ -3856,18 +3863,27 @@ async function loadChatHistory() {
     try {
       const snap = await fbDb.collection('userData').doc(currentUser.uid).get();
       const data = snap.data();
-      chatHistory = (data && Array.isArray(data.chatHistory)) ? data.chatHistory : [];
-      if (!chatHistory.length) {
+      const firestoreHistory = data && Array.isArray(data.chatHistory) ? data.chatHistory : null;
+      if (firestoreHistory && firestoreHistory.length) {
+        chatHistory = firestoreHistory;
+        // Firestore 데이터가 있으면 localStorage도 동기화
+        try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
+      } else {
+        // Firestore 비어있으면 localStorage 백업에서 복구
         const raw = localStorage.getItem(chatStorageKey());
         if (raw) {
-          try {
-            chatHistory = JSON.parse(raw);
-            await saveChatHistory();
-            localStorage.removeItem(chatStorageKey());
-          } catch(e) { chatHistory = []; }
+          try { chatHistory = JSON.parse(raw); } catch(e) { chatHistory = []; }
+        } else {
+          chatHistory = [];
         }
       }
-    } catch(e) { chatHistory = []; }
+    } catch(e) {
+      // Firestore 오류 시 localStorage로 폴백
+      try {
+        const raw = localStorage.getItem(chatStorageKey());
+        chatHistory = raw ? JSON.parse(raw) : [];
+      } catch(e2) { chatHistory = []; }
+    }
   } else {
     try {
       const raw = localStorage.getItem(chatStorageKey());
@@ -3877,12 +3893,12 @@ async function loadChatHistory() {
 }
 
 async function saveChatHistory() {
+  // localStorage에 항상 백업 (Firestore 와이프 대비)
+  try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
   if (currentUser) {
     try {
       await fbDb.collection('userData').doc(currentUser.uid).update({ chatHistory });
     } catch(e) {}
-  } else {
-    try { localStorage.setItem(chatStorageKey(), JSON.stringify(chatHistory)); } catch(e) {}
   }
 }
 
@@ -4325,8 +4341,11 @@ async function loadFromFirestore() {
     // 마지막 탭 상태 복원
     if (d.lastTab) localStorage.setItem('lastTab', JSON.stringify(d.lastTab));
 
-    // AI 분석 결과 복원
-    const ai = d.aiAnalysis || {};
+    // AI 분석 결과 복원 (Firestore 우선, localStorage 폴백)
+    const firestoreAi = d.aiAnalysis || {};
+    let localAi = {};
+    try { localAi = JSON.parse(localStorage.getItem('aiAnalysisCache') || '{}'); } catch(e) {}
+    const ai = Object.keys(firestoreAi).length ? firestoreAi : localAi;
     const restoreMap = {
       portfolio:  'portfolioAnalysisContent',
       krMarket:   'krAiAnalysisResult',
