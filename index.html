@@ -3407,6 +3407,7 @@ async function runAiAnalysis() {
 // ══════════════════════════════════════════
 function switchTab(tab) {
   currentTab = tab;
+  localStorage.setItem('lastTab', tab);
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   ['monthly','annual','stocks','usmarket','krmarket','chatbot'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
   renderTabActions();
@@ -4059,9 +4060,13 @@ function toast(msg,type='info'){
 function render(){
   renderSummary(); renderCharts();
   renderMonthlyTable(); renderAnnualTable();
-  if(currentTab==='stocks')  renderStocksTab();
-  if(currentTab==='chatbot') renderChatTab();
-  renderTabActions();
+  const savedTab = localStorage.getItem('lastTab');
+  if (savedTab && savedTab !== 'monthly') switchTab(savedTab);
+  else {
+    if(currentTab==='stocks')  renderStocksTab();
+    if(currentTab==='chatbot') renderChatTab();
+    renderTabActions();
+  }
 }
 
 // ══════════════════════════════════════════
