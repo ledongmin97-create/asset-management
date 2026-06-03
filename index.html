@@ -2751,6 +2751,11 @@ async function callChatbotWithAPI(question, assistantMsgId) {
       return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 원금 ${w(r.투자원금||0)} | 손익 ${gain} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
     }).join('\n');
     system += `\n\n## 사용자 포트폴리오 현황\n총 ${w(total)} | 원금 ${w(cost)} | 손익 ${profit>=0?'+':''}${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n섹터: ${sectorLines}\n\n${list}`;
+
+    const reportMd = aiResultsRawMd['portfolioAnalysisContent'];
+    if (reportMd) {
+      system += `\n\n## 최근 AI 포트폴리오 분석 리포트\n아래는 방금 생성된 포트폴리오 심층 분석 결과입니다. 사용자가 이 리포트에 대해 질문하면 이 내용을 기반으로 답하세요.\n\n${reportMd}`;
+    }
   }
   const continueMode = document.getElementById('chatContinueMode')?.checked ?? false;
   let messages;
