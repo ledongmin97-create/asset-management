@@ -2649,7 +2649,7 @@ async function fetchKrMarketData(btn) {
 }
 
 // ── 공통 Claude API 헬퍼 ─────────────────────────────────
-async function callClaudeAPI({ prompt, messages, system, maxTokens = 8000 }) {
+async function callClaudeAPI({ prompt, messages, system, maxTokens = 16000 }) {
   const clApiKey = localStorage.getItem(clApiKeyName()) || '';
   if (!clApiKey) throw new Error('NO_KEY');
   const body = { model: 'claude-sonnet-4-6', max_tokens: maxTokens,
@@ -2804,7 +2804,7 @@ async function callChatbotWithAPI(question, assistantMsgId) {
     messages = [{ role: 'user', content: question }];
   }
   try {
-    const text = await callClaudeAPI({ messages, system, maxTokens: 8000 });
+    const text = await callClaudeAPI({ messages, system, maxTokens: 16000 });
     const idx = chatHistory.findIndex(m => m.id === assistantMsgId);
     if (idx !== -1) { chatHistory[idx].text = text; chatHistory[idx].pending = false; delete chatHistory[idx].apiPending; }
     saveChatHistory(); renderChatMessages();
@@ -2958,7 +2958,7 @@ ${stocks.map(r => {
 현재 매크로 환경 (금리·달러·지정학)을 고려한 구체적 방향성 제시`;
 
   try {
-    const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 8000 });
+    const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 16000 });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
     renderAiResult(html, document.getElementById('portfolioAnalysisContent'), undefined, text);
     toast('포트폴리오 분석 완료!', 'success');
@@ -3181,7 +3181,7 @@ async function refreshMarketAnalysis(btn) {
 
     if (clApiKey) {
       btn.textContent = '🤖 Claude 분석 중...';
-      const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 8000 });
+      const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM, maxTokens: 16000 });
       applyMarketAnalysisText(text);
       toast('시장 분석 자동 업데이트 완료!', 'success');
     } else {
