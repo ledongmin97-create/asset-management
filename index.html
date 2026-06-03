@@ -248,12 +248,14 @@
     .ai-result li{margin-bottom:5px;}
     .ai-result strong{color:var(--gray-900);}
     .ai-result p{margin-bottom:10px;}
-    .ai-result table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .ai-result table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;table-layout:fixed;}
     .ai-result table thead tr{background:var(--gray-50);}
-    .ai-result table th{padding:7px 10px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);white-space:nowrap;}
-    .ai-result table td{padding:7px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top;word-break:keep-all;overflow-wrap:break-word;}
+    .ai-result table th{padding:7px 10px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:2px solid var(--gray-200);word-break:keep-all;}
+    .ai-result table td{padding:7px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top;word-break:keep-all;overflow-wrap:break-word;white-space:normal;}
     .ai-result table tr:last-child td{border-bottom:none;}
     .ai-result table tr:hover td{background:var(--gray-50);}
+    .ai-result table td:first-child,.ai-result table th:first-child{width:28px;}
+    .ai-result table td:nth-child(2),.ai-result table th:nth-child(2){width:70px;font-weight:700;}
     .api-input{width:100%;padding:9px 11px;border:1px solid var(--gray-300);border-radius:8px;font-size:12px;color:var(--gray-800);outline:none;font-family:inherit;background:white;}
     .api-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
     .quote-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
@@ -2958,10 +2960,10 @@ async function refreshKrMarketAnalysis(btn) {
 현재 강세/약세 섹터와 그 이유, 외국인·기관 수급 흐름
 
 ### 🚀 지금 주목할 종목/ETF TOP 5
-위 데이터는 맥락용이며, 한국 전체 상장 종목·ETF 중 현재 가장 매력적인 5개를 자유롭게 선정. 반드시 5개를 채울 것.
-| # | 종목/티커 | 추천 근거 | 단기 목표가 | 투자 판단 |
-|---|-----------|-----------|-------------|-----------|
-(투자 판단: 강력매수/매수/분할매수/관망 중 하나)
+한국 전체 상장 종목·ETF 중 현재 가장 매력적인 5개를 자유롭게 선정. 반드시 5개를 채울 것.
+| # | 종목/티커 | 추천 근거 (목표가·카탈리스트·리스크 포함) | 투자 판단 |
+|---|-----------|------------------------------------------|-----------|
+투자 판단: 강력매수/매수/분할매수/관망 중 하나.
 
 ### ⚠️ 지금 당장 경계해야 할 리스크
 구체적 시나리오와 수치 포함 (막연한 "글로벌 불확실성" 수준 금지)
@@ -3063,11 +3065,10 @@ ${stockTable}
 강세·약세·중립 섹터 각각 2개 이상 포함. 기관·외국인 수급 흐름과 연결해서 설명.
 
 ### 🚀 지금 당장 주목할 종목 TOP 5
-위 데이터는 참고용 맥락이며, 추천은 미국 전체 상장 종목 중에서 현재 가장 매력적인 5개를 자유롭게 선정. 위 데이터에 있는 종목도 포함 가능.
-반드시 5개를 채울 것.
-| # | 티커 | 현재가(대략) | 단기 목표가 | 핵심 카탈리스트 | 리스크 | 투자 판단 |
-|---|------|-------------|------------|----------------|--------|-----------|
-각 종목마다 목표가 근거(기술적·펀더멘털), 진입 시 주목해야 할 지표 포함. (투자 판단: 강력매수/매수/분할매수/관망 중 하나)
+위 데이터는 참고용 맥락이며, 추천은 미국 전체 상장 종목 중에서 현재 가장 매력적인 5개를 자유롭게 선정. 반드시 5개를 채울 것.
+| # | 티커 | 추천 근거 (카탈리스트·목표가 포함) | 투자 판단 |
+|---|------|-----------------------------------|-----------|
+투자 판단: 강력매수/매수/분할매수/관망 중 하나. 추천 근거 컬럼에 목표가·리스크·진입 타이밍을 모두 담을 것.
 
 ### ⚠️ 지금 가장 경계해야 할 리스크 시나리오 (최소 3가지)
 각 리스크마다: ① 구체적 트리거(어떤 지표·이벤트가 어느 수준을 넘으면) ② 발생 시 지수 예상 낙폭 ③ 대응 전략. "지정학적 리스크" 같은 막연한 서술 금지.
