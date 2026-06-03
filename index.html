@@ -1732,7 +1732,7 @@ async function syncSheets() {
     if (a2.length) annual  = a2;
     if (s2.length) { stocks = s2; exchangeRate = rate; }
     save();
-    render();
+    renderDataOnly();
     toast(`동기화 완료! 주식 ${s2.length}개 종목`, 'success');
   } catch(e) {
     console.error(e);
@@ -1884,7 +1884,7 @@ async function handleExcelUpload(event) {
     if (a2.length) annual  = a2;
     if (s2.length) { stocks = s2; exchangeRate = rate; }
     save();
-    render();
+    renderDataOnly();
     toast(`엑셀 업로드 완료! 월별 ${m2.length}행 · 주식 ${s2.length}종목`, 'success');
   } catch(e) {
     console.error(e);
@@ -3784,7 +3784,7 @@ function del(type,idx){
   if(type==='monthly') monthly.splice(idx,1);
   else if(type==='annual') annual.splice(idx,1);
   else stocks.splice(idx,1);
-  save(); render();
+  save(); renderDataOnly();
   toast('삭제되었습니다','info');
 }
 
@@ -4228,6 +4228,14 @@ function render(){
     if(currentTab==='chatbot') renderChatTab();
     renderTabActions();
   }
+}
+
+// 데이터만 갱신 (챗봇·AI분석 건드리지 않음)
+function renderDataOnly() {
+  renderSummary(); renderCharts();
+  renderMonthlyTable(); renderAnnualTable();
+  if (currentTab === 'stocks') renderStocksTab();
+  renderTabActions();
 }
 
 // ══════════════════════════════════════════
