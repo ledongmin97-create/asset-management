@@ -2916,6 +2916,9 @@ ${stocks.map(r => {
 - 추가 매수 관심 종목 및 적정 비중
 - 현금 비중 권고 (현재 시장 환경 고려)
 
+### 🌐 현재 시장 환경이 포트폴리오에 미치는 영향 및 전략
+현재 글로벌 매크로 환경(연준 정책·달러·금리·지정학)이 위 포트폴리오의 각 섹터/종목에 구체적으로 어떤 영향을 미치는지 분석하고, 지금 당장 취해야 할 대응 전략 제시.
+
 ### 📈 향후 3개월 포트폴리오 전략
 현재 매크로 환경 (금리·달러·지정학)을 고려한 구체적 방향성 제시`;
 
@@ -2969,7 +2972,17 @@ async function refreshKrMarketAnalysis(btn) {
 구체적 시나리오와 수치 포함 (막연한 "글로벌 불확실성" 수준 금지)
 
 ### 🎯 이번 주 트레이딩 전략
-단기·중기 포지션 방향성과 구체적 진입 레벨 제시`;
+단기·중기 포지션 방향성과 구체적 진입 레벨 제시${buildPortfolioContext() ? `
+
+---
+
+${buildPortfolioContext()}
+
+### 💼 현재 한국 시장이 내 포트폴리오에 미치는 영향 및 전략
+위 포트폴리오의 보유 종목·섹터를 기준으로:
+- 현재 KOSPI·KOSDAQ·환율 흐름이 각 보유 종목/섹터에 구체적으로 어떤 영향을 주는지
+- 수익 중인 종목과 손실 중인 종목 각각에 대한 지금 당장의 대응 방안
+- 현재 한국 시장 국면에서 포트폴리오 비중 조정이 필요한 부분` : ''}`;
     btn.textContent = '🤖 분석 중...';
     const text = await callClaudeAPI({ prompt, system: ANALYSIS_SYSTEM });
     const html = (typeof marked !== 'undefined') ? marked.parse(text) : text.replace(/\n/g,'<br>');
@@ -3016,6 +3029,23 @@ async function runAnnualInsight(btn) {
     if (e.message === 'NO_KEY') showInlinePaste('annualInsightResult', prompt);
     else toast('분석 실패: ' + e.message, 'error');
   } finally { btn.disabled = false; btn.textContent = orig; }
+}
+
+function buildPortfolioContext() {
+  if (!stocks.length) return '';
+  const total  = stocks.reduce((s,r)=>s+(r.평가금액||0),0);
+  const profit = stocks.reduce((s,r)=>s+(r.수익금||0),0);
+  const cost   = stocks.reduce((s,r)=>s+(r.투자원금||0),0);
+  const sectorMap = {};
+  stocks.forEach(r=>{ const c=r.카테고리||'기타'; sectorMap[c]=(sectorMap[c]||0)+(r.평가금액||0); });
+  const sectorLines = Object.entries(sectorMap).sort((a,b)=>b[1]-a[1])
+    .map(([c,v])=>`${c} ${w(v)} (${total?(v/total*100).toFixed(1):0}%)`).join(' | ');
+  const list = stocks.map(r=>{
+    const pct = total?((r.평가금액||0)/total*100).toFixed(1):'0';
+    const gain = r.수익금!=null?(r.수익금>=0?`+${w(r.수익금)}`:w(r.수익금)):'-';
+    return `${r.종목명} | ${r.카테고리||'-'} | ${w(r.평가금액)} (${pct}%) | 손익 ${gain} | 수익률 ${r.수익률!=null?r.수익률.toFixed(2)+'%':'-'}`;
+  }).join('\n');
+  return `## 사용자 포트폴리오\n총 ${w(total)} | 원금 ${w(cost)} | 손익 ${profit>=0?'+':''}${w(profit)} | 수익률 ${cost>0?(profit/cost*100).toFixed(2):0}%\n환율: ${exchangeRate.toLocaleString('ko-KR')}원/USD\n섹터: ${sectorLines}\n\n${list}`;
 }
 
 function buildMarketPrompt(quotes) {
@@ -3074,7 +3104,17 @@ ${stockTable}
 각 리스크마다: ① 구체적 트리거(어떤 지표·이벤트가 어느 수준을 넘으면) ② 발생 시 지수 예상 낙폭 ③ 대응 전략. "지정학적 리스크" 같은 막연한 서술 금지.
 
 ### 📅 이번 주 핵심 이벤트 & 트레이딩 전략
-이번 주 주목해야 할 경제지표·실적 발표·연준 발언 일정과 각각의 예상 시나리오(상승/하락 시나리오별 S&P500 레인지) 제시. 단기·스윙 포지션 구체적 방향성 포함.`;
+이번 주 주목해야 할 경제지표·실적 발표·연준 발언 일정과 각각의 예상 시나리오(상승/하락 시나리오별 S&P500 레인지) 제시. 단기·스윙 포지션 구체적 방향성 포함.${buildPortfolioContext() ? `
+
+---
+
+${buildPortfolioContext()}
+
+### 💼 현재 미국 시장이 내 포트폴리오에 미치는 영향 및 전략
+위 포트폴리오의 보유 종목·섹터를 기준으로:
+- 현재 미국 시장 흐름(지수·섹터 로테이션·매크로)이 각 보유 종목/섹터에 구체적으로 어떤 영향을 주는지
+- 수익 중인 종목과 손실 중인 종목 각각에 대한 지금 당장의 대응 방안
+- 현재 시장 국면에서 포트폴리오 비중 조정이 필요한 부분 (줄여야 할 것 / 늘려야 할 것)` : ''}`;
 }
 
 function applyMarketAnalysisText(text) {
