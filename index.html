@@ -2845,6 +2845,26 @@ async function callChatbotWithAPI(question, assistantMsgId, image = null) {
       system += `\n\n## 최근 AI 포트폴리오 분석 리포트\n아래는 방금 생성된 포트폴리오 심층 분석 결과입니다. 사용자가 이 리포트에 대해 질문하면 이 내용을 기반으로 답하세요.\n\n${reportMd}`;
     }
   }
+
+  // 미국 시장 데이터 (usCard + usMarketResult 테이블)
+  const usQuotes = lastMarketQuotes.length ? lastMarketQuotes : extractQuotesFromUsSection();
+  if (usQuotes.length) {
+    const fmt2 = (v, dec=2) => v != null ? v.toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}) : '-';
+    const nameMap = { '^GSPC':'S&P 500', '^IXIC':'Nasdaq', '^DJI':'Dow Jones', '^RUT':'Russell 2000' };
+    const indices = usQuotes.filter(q => q.symbol.startsWith('^'));
+    const ustocks = usQuotes.filter(q => !q.symbol.startsWith('^'));
+    const idxLines = indices.map(q => `${nameMap[q.symbol]||q.symbol}: ${fmt2(q.regularMarketPrice)} (${(q.regularMarketChangePercent>=0?'+':'')}${(q.regularMarketChangePercent||0).toFixed(2)}%)`).join(' | ');
+    const stkLines = ustocks.map(q => `${q.symbol}: $${fmt2(q.regularMarketPrice)} (${(q.regularMarketChangePercent>=0?'+':'')}${(q.regularMarketChangePercent||0).toFixed(2)}%)`).join(' | ');
+    system += `\n\n## 미국 시장 실시간 데이터\n지수: ${idxLines}\n종목: ${stkLines}`;
+  }
+
+  // 한국 시장 데이터 (lastKrQuotes)
+  if (lastKrQuotes) {
+    const q = lastKrQuotes;
+    const fmt3 = v => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:2}) : '-';
+    const chg = x => x ? `${(x.regularMarketChangePercent||0)>=0?'+':''}${(x.regularMarketChangePercent||0).toFixed(2)}%` : '-';
+    system += `\n\n## 한국 시장 실시간 데이터\nKOSPI: ${fmt3(q['^KS11']?.regularMarketPrice)} (${chg(q['^KS11'])}) | KOSDAQ: ${fmt3(q['^KQ11']?.regularMarketPrice)} (${chg(q['^KQ11'])}) | 원/달러: ${fmt3(q['KRW=X']?.regularMarketPrice)}원 (${chg(q['KRW=X'])}) | 삼성전자: ${fmt3(q['005930.KS']?.regularMarketPrice)}원 | SK하이닉스: ${fmt3(q['000660.KS']?.regularMarketPrice)}원`;
+  }
   const continueMode = document.getElementById('chatContinueMode')?.checked ?? false;
   let messages;
   // 현재 메시지 content 구성 (이미지 포함 가능)
