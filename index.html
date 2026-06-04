@@ -3374,28 +3374,45 @@ function saveUsApiKeys() {
 }
 
 async function fetchMarketData() {
-  const syms   = '^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL';
-  const fields = 'shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketPreviousClose';
-  const qs     = `symbols=${encodeURIComponent(syms)}&fields=${fields}&_=${Date.now()}`;
-  const q1url  = `https://query1.finance.yahoo.com/v7/finance/quote?${qs}`;
-  const q2url  = `https://query2.finance.yahoo.com/v7/finance/quote?${qs}`;
+  // Stooq — CORS 허용, API 키 불필요, 안정적
+  try {
+    const stooqMap = { '^SPX':'^GSPC', '^NDX':'^IXIC', '^DJI':'^DJI', '^RUT':'^RUT' };
+    const url = 'https://stooq.com/q/l/?s=^spx,^ndx,^dji,^rut,nvda.us,msft.us,meta.us,amzn.us,googl.us,aapl.us&f=sd2t2ohlcv&h&e=json';
+    const res = await fetch(url, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      const syms = data?.symbols;
+      if (Array.isArray(syms) && syms.length) {
+        const result = syms.map(s => {
+          const raw   = s.symbol.toUpperCase();
+          const sym   = stooqMap[raw] || raw.replace('.US', '');
+          const close = parseFloat(s.close);
+          const open  = parseFloat(s.open);
+          const chgPct = (close > 0 && open > 0) ? ((close - open) / open * 100) : 0;
+          return {
+            symbol: sym,
+            regularMarketPrice: (isNaN(close) || close <= 0) ? null : close,
+            regularMarketChangePercent: chgPct,
+            regularMarketChange: (close - open) || 0,
+            fiftyTwoWeekHigh: null,
+            fiftyTwoWeekLow: null,
+          };
+        }).filter(q => q.regularMarketPrice != null);
+        if (result.length >= 5) return result;
+      }
+    }
+  } catch(e) {}
 
-  const attempts = [
-    () => fetch(q1url, { cache: 'no-store' }),
-    () => fetch(`https://corsproxy.io/?${encodeURIComponent(q1url)}`, { cache: 'no-store' }),
-    () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(q1url)}`, { cache: 'no-store' }),
-    () => fetch(`https://corsproxy.io/?${encodeURIComponent(q2url)}`, { cache: 'no-store' }),
-    () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(q2url)}`, { cache: 'no-store' }),
-  ];
-
-  for (const attempt of attempts) {
+  // Yahoo Finance 폴백 (프록시)
+  const qs   = `symbols=${encodeURIComponent('^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL')}&fields=shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketPreviousClose&_=${Date.now()}`;
+  const yurl = `https://query1.finance.yahoo.com/v7/finance/quote?${qs}`;
+  for (const pfx of ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url=']) {
     try {
-      const res = await attempt();
+      const res = await fetch(pfx + encodeURIComponent(yurl), { cache: 'no-store' });
       if (!res.ok) continue;
       const data = await res.json();
       const result = data?.quoteResponse?.result;
       if (!Array.isArray(result) || !result.length) continue;
-      // 장 마감 시 regularMarketPrice가 null이면 전일 종가로 대체
       result.forEach(q => {
         if (q.regularMarketPrice == null && q.regularMarketPreviousClose != null) {
           q.regularMarketPrice = q.regularMarketPreviousClose;
@@ -3405,7 +3422,7 @@ async function fetchMarketData() {
       if (result.some(q => q.regularMarketPrice != null)) return result;
     } catch(e) { continue; }
   }
-  throw new Error('Yahoo Finance 데이터 수집 실패 (모든 경로 차단됨)');
+  throw new Error('시장 데이터 수집 실패 — 잠시 후 다시 시도해주세요');
 }
 
 async function fetchNews(avKey) {
