@@ -3235,11 +3235,12 @@ async function refreshMarketAnalysis(btn) {
   btn.disabled = true;
   let prompt = '';
   try {
-    let quotes = lastMarketQuotes;
-    if (!quotes.length) quotes = extractQuotesFromGrid();
+    let quotes = lastMarketQuotes.length ? lastMarketQuotes : extractQuotesFromGrid();
     if (!quotes.length) {
-      toast('실시간 업데이트를 먼저 눌러주세요', 'error');
-      return;
+      btn.textContent = '📡 데이터 수집 중...';
+      quotes = await fetchMarketData();
+      lastMarketQuotes = quotes;
+      renderLiveQuotes(quotes);
     }
     prompt = buildMarketPrompt(quotes);
 
