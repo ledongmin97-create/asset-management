@@ -3235,12 +3235,10 @@ async function refreshMarketAnalysis(btn) {
   btn.disabled = true;
   let prompt = '';
   try {
-    let quotes = lastMarketQuotes.length ? lastMarketQuotes : extractQuotesFromGrid();
+    let quotes = lastMarketQuotes.length ? lastMarketQuotes : extractQuotesFromUsSection();
     if (!quotes.length) {
-      btn.textContent = '📡 데이터 수집 중...';
-      quotes = await fetchMarketData();
-      lastMarketQuotes = quotes;
-      renderLiveQuotes(quotes);
+      toast('먼저 실시간 업데이트 버튼을 눌러주세요', 'error');
+      return;
     }
     prompt = buildMarketPrompt(quotes);
 
@@ -3453,26 +3451,30 @@ async function fetchNews(avKey) {
   return (data.feed || []).slice(0, 12);
 }
 
-function extractQuotesFromGrid() {
-  const grid = document.getElementById('liveQuoteGrid');
-  if (!grid) return [];
-  const dispToSym = { 'S&P 500':'^GSPC', 'Nasdaq':'^IXIC', 'Dow Jones':'^DJI', 'Russell 2000':'^RUT' };
-  return Array.from(grid.querySelectorAll('.quote-card')).map(card => {
-    const sym   = card.querySelector('.quote-symbol')?.textContent.trim();
-    const price = card.querySelector('.quote-price')?.textContent.replace(/[$,]/g,'').trim();
-    const chgEl = card.querySelector('.quote-change-up, .quote-change-down');
-    const chg   = chgEl?.textContent.replace(/[▲▼%]/g,'').trim();
-    const p = parseFloat(price);
-    if (!sym || isNaN(p) || p <= 0) return null;
-    const isDown = chgEl?.classList.contains('quote-change-down');
-    return {
-      symbol: dispToSym[sym] || sym,
-      regularMarketPrice: p,
-      regularMarketChangePercent: parseFloat(chg) * (isDown ? -1 : 1) || 0,
-      regularMarketChange: 0,
-      fiftyTwoWeekHigh: null, fiftyTwoWeekLow: null,
-    };
-  }).filter(Boolean);
+function extractQuotesFromUsSection() {
+  const quotes = [];
+  // 지수 카드에서 읽기
+  [['usCard_sp500','^GSPC'],['usCard_nasdaq','^IXIC'],['usCard_dji','^DJI']].forEach(([id, sym]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const divs = el.querySelectorAll('div');
+    const price = parseFloat((divs[1]?.textContent || '').replace(/,/g,''));
+    const chgText = divs[2]?.textContent || '';
+    const chgPct = parseFloat(chgText.replace(/[▲▼%\s]/g,'')) * (chgText.includes('▼') ? -1 : 1);
+    if (!isNaN(price) && price > 0) quotes.push({ symbol: sym, regularMarketPrice: price, regularMarketChangePercent: chgPct || 0, regularMarketChange: 0, fiftyTwoWeekHigh: null, fiftyTwoWeekLow: null });
+  });
+  // 종목 테이블에서 읽기
+  document.querySelectorAll('#usMarketResult tbody tr').forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 4) return;
+    const sym   = cells[0].textContent.trim();
+    const price = parseFloat(cells[1].textContent.replace(/[$,]/g,''));
+    const chgPct= parseFloat(cells[2].textContent.replace(/[+%\s]/g,''));
+    const range = cells[3].textContent.match(/\$([\d.]+)\s*~\s*\$([\d.]+)/);
+    if (!sym || isNaN(price) || price <= 0) return;
+    quotes.push({ symbol: sym, regularMarketPrice: price, regularMarketChangePercent: chgPct || 0, regularMarketChange: 0, fiftyTwoWeekHigh: range ? parseFloat(range[2]) : null, fiftyTwoWeekLow: range ? parseFloat(range[1]) : null });
+  });
+  return quotes;
 }
 
 function renderLiveQuotes(quotes) {
