@@ -3374,64 +3374,49 @@ function saveUsApiKeys() {
 }
 
 async function fetchMarketData() {
-  // Stooq — CORS 허용, API 키 불필요, 안정적 (개별 병렬 요청)
-  try {
-    const stooqSymbols = [
-      { s: '^spx',     out: '^GSPC' },
-      { s: '^ndx',     out: '^IXIC' },
-      { s: '^dji',     out: '^DJI'  },
-      { s: '^rut',     out: '^RUT'  },
-      { s: 'nvda.us',  out: 'NVDA'  },
-      { s: 'msft.us',  out: 'MSFT'  },
-      { s: 'meta.us',  out: 'META'  },
-      { s: 'amzn.us',  out: 'AMZN'  },
-      { s: 'googl.us', out: 'GOOGL' },
-      { s: 'aapl.us',  out: 'AAPL'  },
-    ];
-    const fetches = stooqSymbols.map(({ s, out }) =>
-      fetch(`https://stooq.com/q/l/?s=${s}&f=sd2t2ohlcv&h&e=json`, { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          const q = data?.symbols?.[0];
-          if (!q) return null;
-          const close = parseFloat(q.close);
-          const open  = parseFloat(q.open);
-          if (isNaN(close) || close <= 0) return null;
-          return {
-            symbol: out,
-            regularMarketPrice: close,
-            regularMarketChangePercent: (open > 0) ? ((close - open) / open * 100) : 0,
-            regularMarketChange: (close - open) || 0,
-            fiftyTwoWeekHigh: null,
-            fiftyTwoWeekLow: null,
-          };
-        })
-        .catch(() => null)
-    );
-    const results = (await Promise.all(fetches)).filter(Boolean);
-    if (results.length >= 5) return results;
-  } catch(e) {}
+  const avKey = localStorage.getItem(avKeyName()) || '';
+  if (!avKey) throw new Error('Alpha Vantage API 키를 먼저 설정해주세요');
 
-  // Yahoo Finance 폴백 (프록시)
-  const qs   = `symbols=${encodeURIComponent('^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL')}&fields=shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketPreviousClose&_=${Date.now()}`;
-  const yurl = `https://query1.finance.yahoo.com/v7/finance/quote?${qs}`;
-  for (const pfx of ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url=']) {
-    try {
-      const res = await fetch(pfx + encodeURIComponent(yurl), { cache: 'no-store' });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const result = data?.quoteResponse?.result;
-      if (!Array.isArray(result) || !result.length) continue;
-      result.forEach(q => {
-        if (q.regularMarketPrice == null && q.regularMarketPreviousClose != null) {
-          q.regularMarketPrice = q.regularMarketPreviousClose;
-          q.regularMarketChangePercent = q.regularMarketChangePercent ?? 0;
-        }
-      });
-      if (result.some(q => q.regularMarketPrice != null)) return result;
-    } catch(e) { continue; }
-  }
-  throw new Error('시장 데이터 수집 실패 — 잠시 후 다시 시도해주세요');
+  // Alpha Vantage GLOBAL_QUOTE — CORS 완전 지원
+  // 지수는 ETF 대리 지표 사용 (SPY=S&P500, QQQ=Nasdaq, DIA=Dow, IWM=Russell)
+  const symbolMap = [
+    { av: 'SPY',   out: '^GSPC' },
+    { av: 'QQQ',   out: '^IXIC' },
+    { av: 'DIA',   out: '^DJI'  },
+    { av: 'IWM',   out: '^RUT'  },
+    { av: 'NVDA',  out: 'NVDA'  },
+    { av: 'MSFT',  out: 'MSFT'  },
+    { av: 'META',  out: 'META'  },
+    { av: 'AMZN',  out: 'AMZN'  },
+    { av: 'GOOGL', out: 'GOOGL' },
+    { av: 'AAPL',  out: 'AAPL'  },
+  ];
+
+  const fetches = symbolMap.map(({ av, out }) =>
+    fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${av}&apikey=${avKey}`)
+      .then(r => r.json())
+      .then(data => {
+        const q = data?.['Global Quote'];
+        if (!q?.['05. price']) return null;
+        const price  = parseFloat(q['05. price']);
+        const chgPct = parseFloat(q['10. change percent']) || 0;
+        const chg    = parseFloat(q['09. change']) || 0;
+        if (isNaN(price) || price <= 0) return null;
+        return {
+          symbol: out,
+          regularMarketPrice: price,
+          regularMarketChangePercent: chgPct,
+          regularMarketChange: chg,
+          fiftyTwoWeekHigh: null,
+          fiftyTwoWeekLow: null,
+        };
+      })
+      .catch(() => null)
+  );
+
+  const results = (await Promise.all(fetches)).filter(q => q?.regularMarketPrice != null);
+  if (results.length >= 4) return results;
+  throw new Error('시장 데이터 수집 실패 — API 요청 한도 초과 또는 네트워크 오류');
 }
 
 async function fetchNews(avKey) {
