@@ -1308,7 +1308,8 @@
     </ol>
 
     <div style="position:relative">
-      <pre class="code-block" id="gasCode">function doPost(e) {
+      <pre class="code-block" id="gasCode">// ── 시트 쓰기 (기존) ──────────────────────────
+function doPost(e) {
   try {
     const ss  = SpreadsheetApp.getActiveSpreadsheet();
     const sh  = ss.getSheetByName('주식 수량');
@@ -1316,7 +1317,6 @@
     const ticker = e.parameter.ticker;
     const field  = e.parameter.field;
     const val    = parseFloat(e.parameter.value);
-
     for (let i = 1; i &lt; dat.length; i++) {
       if (String(dat[i][0]).trim() === ticker) {
         if (field === '현재가') sh.getRange(i+1, 2).setValue(val);
@@ -1324,14 +1324,39 @@
         break;
       }
     }
-    return ContentService
-      .createTextOutput(JSON.stringify({ok:true}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ok:false,msg:String(err)}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ok:false,msg:String(err)})).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// ── 시장 데이터 프록시 (신규) ─────────────────
+function doGet(e) {
+  if (e.parameter.action === 'marketData') return getMarketData();
+  return ContentService.createTextOutput('OK');
+}
+
+function getMarketData() {
+  const symbols = [
+    {s:'^spx',out:'^GSPC'},{s:'^ndx',out:'^IXIC'},{s:'^dji',out:'^DJI'},{s:'^rut',out:'^RUT'},
+    {s:'nvda.us',out:'NVDA'},{s:'msft.us',out:'MSFT'},{s:'meta.us',out:'META'},
+    {s:'amzn.us',out:'AMZN'},{s:'googl.us',out:'GOOGL'},{s:'aapl.us',out:'AAPL'},
+  ];
+  const quotes = [];
+  for (const {s, out} of symbols) {
+    try {
+      const r = UrlFetchApp.fetch('https://stooq.com/q/l/?s='+s+'&f=sd2t2ohlcv&h&e=json', {muteHttpExceptions:true});
+      const d = JSON.parse(r.getContentText())?.symbols?.[0];
+      if (!d || d.close === 'N/A') continue;
+      const close = parseFloat(d.close), open = parseFloat(d.open);
+      if (close &gt; 0) quotes.push({
+        symbol:out, regularMarketPrice:close,
+        regularMarketChangePercent: open &gt; 0 ? (close-open)/open*100 : 0,
+        regularMarketChange: close-open, fiftyTwoWeekHigh:null, fiftyTwoWeekLow:null
+      });
+    } catch(err) {}
+  }
+  return ContentService.createTextOutput(JSON.stringify({quotes})).setMimeType(ContentService.MimeType.JSON);
 }</pre>
       <button class="code-copy-btn" onclick="copyGasCode()">복사</button>
     </div>
@@ -3374,49 +3399,47 @@ function saveUsApiKeys() {
 }
 
 async function fetchMarketData() {
+  // 1순위: GAS 프록시 (서버사이드 Stooq — CORS·차단 없음)
+  if (gasUrl) {
+    try {
+      const res = await fetch(`${gasUrl}?action=marketData`, { redirect: 'follow' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.quotes) && data.quotes.length >= 4) return data.quotes;
+      }
+    } catch(e) {}
+  }
+
+  // 2순위: Alpha Vantage 폴백
   const avKey = localStorage.getItem(avKeyName()) || '';
-  if (!avKey) throw new Error('Alpha Vantage API 키를 먼저 설정해주세요');
+  if (!avKey) throw new Error('GAS 미설정 · AV 키 없음 — API 설정을 확인해주세요');
 
-  // Alpha Vantage GLOBAL_QUOTE — CORS 완전 지원
-  // 지수는 ETF 대리 지표 사용 (SPY=S&P500, QQQ=Nasdaq, DIA=Dow, IWM=Russell)
   const symbolMap = [
-    { av: 'SPY',   out: '^GSPC' },
-    { av: 'QQQ',   out: '^IXIC' },
-    { av: 'DIA',   out: '^DJI'  },
-    { av: 'IWM',   out: '^RUT'  },
-    { av: 'NVDA',  out: 'NVDA'  },
-    { av: 'MSFT',  out: 'MSFT'  },
-    { av: 'META',  out: 'META'  },
-    { av: 'AMZN',  out: 'AMZN'  },
-    { av: 'GOOGL', out: 'GOOGL' },
-    { av: 'AAPL',  out: 'AAPL'  },
+    { av: 'SPY',   out: '^GSPC' }, { av: 'QQQ',   out: '^IXIC' },
+    { av: 'DIA',   out: '^DJI'  }, { av: 'IWM',   out: '^RUT'  },
+    { av: 'NVDA',  out: 'NVDA'  }, { av: 'MSFT',  out: 'MSFT'  },
+    { av: 'META',  out: 'META'  }, { av: 'AMZN',  out: 'AMZN'  },
+    { av: 'GOOGL', out: 'GOOGL' }, { av: 'AAPL',  out: 'AAPL'  },
   ];
-
   const fetches = symbolMap.map(({ av, out }) =>
     fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${av}&apikey=${avKey}`)
       .then(r => r.json())
       .then(data => {
+        if (data?.Note || data?.Information) return null;
         const q = data?.['Global Quote'];
         if (!q?.['05. price']) return null;
-        const price  = parseFloat(q['05. price']);
-        const chgPct = parseFloat(q['10. change percent']) || 0;
-        const chg    = parseFloat(q['09. change']) || 0;
-        if (isNaN(price) || price <= 0) return null;
-        return {
-          symbol: out,
-          regularMarketPrice: price,
-          regularMarketChangePercent: chgPct,
-          regularMarketChange: chg,
-          fiftyTwoWeekHigh: null,
-          fiftyTwoWeekLow: null,
+        const price = parseFloat(q['05. price']);
+        return (isNaN(price) || price <= 0) ? null : {
+          symbol: out, regularMarketPrice: price,
+          regularMarketChangePercent: parseFloat(q['10. change percent']) || 0,
+          regularMarketChange: parseFloat(q['09. change']) || 0,
+          fiftyTwoWeekHigh: null, fiftyTwoWeekLow: null,
         };
-      })
-      .catch(() => null)
+      }).catch(() => null)
   );
-
   const results = (await Promise.all(fetches)).filter(q => q?.regularMarketPrice != null);
-  if (results.length >= 4) return results;
-  throw new Error('시장 데이터 수집 실패 — API 요청 한도 초과 또는 네트워크 오류');
+  if (results.length >= 3) return results;
+  throw new Error('시장 데이터 수집 실패 — GAS 업데이트 또는 AV 한도 확인 필요');
 }
 
 async function fetchNews(avKey) {
