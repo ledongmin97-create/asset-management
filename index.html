@@ -2375,6 +2375,16 @@ function renderStockContent() {
 let usMarketInitialized = false;
 let lastMarketQuotes = [];
 
+// 페이지 로드 시 시장 데이터 캐시 복원
+try {
+  const uq = JSON.parse(localStorage.getItem('us_quotes_cache') || 'null');
+  if (Array.isArray(uq) && uq.some(q => q.regularMarketPrice != null)) lastMarketQuotes = uq;
+} catch(e) {}
+try {
+  const kq = JSON.parse(localStorage.getItem('kr_quotes_cache') || 'null');
+  if (kq && typeof kq === 'object' && Object.keys(kq).length) lastKrQuotes = kq;
+} catch(e) {}
+
 function renderUsMarketTab() {
   if (usMarketInitialized) return;
   usMarketInitialized = true;
@@ -2557,6 +2567,7 @@ async function fetchKrMarketData(btn) {
     const quotes = {};
     results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
     lastKrQuotes = quotes;
+    try { localStorage.setItem('kr_quotes_cache', JSON.stringify(quotes)); } catch(e) {}
 
     const fmt    = (v, dec=2) => v != null ? v.toLocaleString('ko-KR', {maximumFractionDigits:dec}) : '-';
     const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
