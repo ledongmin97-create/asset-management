@@ -1075,6 +1075,7 @@
           </div>
         </div>
 
+        <div id="krStaticContent">
         <!-- 핵심 이슈 -->
         <div style="background:var(--primary-light);border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px">
           <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px">🔥 지금 핵심 이슈</div>
@@ -1191,11 +1192,8 @@
           </div>
 
         </div>
-        <div style="font-size:11px;color:var(--gray-400);padding-top:10px;margin-top:12px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-          <span>🤖 Claude AI 분석 · 참고용, 투자 손실 책임 없음</span>
-          <span id="krAnalysisTime">갱신: 실시간 업데이트 후 표시</span>
-        </div>
-        <div id="krAiAnalysisResult" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-100)"></div>
+        </div><!-- /krStaticContent -->
+        <div id="krAiAnalysisResult" style="display:none"></div>
       </div>
     </div>
 
@@ -2350,6 +2348,7 @@ function renderStockContent() {
 // US MARKET TAB
 // ══════════════════════════════════════════
 let usMarketInitialized = false;
+let lastMarketQuotes = [];
 
 function renderUsMarketTab() {
   if (usMarketInitialized) return;
@@ -2407,6 +2406,10 @@ function renderUsMarketTab() {
   if (ck) ck.value = localStorage.getItem(clApiKeyName()) || '';
 
   // 이전 시장 데이터 캐시 복원
+  try {
+    const savedQuotes = JSON.parse(localStorage.getItem('us_quotes_cache') || 'null');
+    if (Array.isArray(savedQuotes) && savedQuotes.some(q => q.regularMarketPrice != null)) lastMarketQuotes = savedQuotes;
+  } catch(e) {}
   try {
     const c = JSON.parse(localStorage.getItem('us_market_cache') || 'null');
     if (c) {
@@ -2778,6 +2781,10 @@ function renderAiResult(html, targetEl, now = new Date().toLocaleString('ko-KR')
   const copyBtn = (rawMd && targetEl.id)
     ? `<button onclick="copyAiResult('${targetEl.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">📋 복사</button>`
     : '';
+  if (targetEl.id === 'krAiAnalysisResult') {
+    const sc = document.getElementById('krStaticContent');
+    if (sc) sc.style.display = 'none';
+  }
   targetEl.style.display = 'block';
   targetEl.innerHTML = `
     <div class="ai-result" style="font-size:13px;line-height:1.7;color:var(--gray-800)">${processedHtml}</div>
@@ -2851,6 +2858,10 @@ async function callChatbotWithAPI(question, assistantMsgId, image = null) {
 function showInlinePaste(targetId, prompt) {
   navigator.clipboard.writeText(prompt).catch(()=>{});
   window.open('https://claude.ai', '_blank');
+  if (targetId === 'krAiAnalysisResult') {
+    const sc = document.getElementById('krStaticContent');
+    if (sc) sc.style.display = 'none';
+  }
   const el = document.getElementById(targetId);
   el.style.display = 'block';
   el.innerHTML = `
@@ -3199,8 +3210,12 @@ async function refreshMarketAnalysis(btn) {
   btn.disabled = true;
   let prompt = '';
   try {
-    btn.textContent = '📡 시장 데이터 수집 중...';
-    const quotes = await fetchMarketData();
+    let quotes = lastMarketQuotes;
+    if (!quotes.length) {
+      btn.textContent = '📡 시장 데이터 수집 중...';
+      quotes = await fetchMarketData();
+      lastMarketQuotes = quotes;
+    }
     prompt = buildMarketPrompt(quotes);
 
     if (clApiKey) {
@@ -3227,6 +3242,7 @@ async function refreshMarketAnalysis(btn) {
     btn.disabled = false; btn.textContent = orig;
   }
 }
+
 
 function applyMarketAnalysis() {
   const text = document.getElementById('pasteMarketInput').value.trim();
@@ -3358,13 +3374,38 @@ function saveUsApiKeys() {
 }
 
 async function fetchMarketData() {
-  const proxy = 'https://corsproxy.io/?';
-  const symbols = encodeURIComponent('^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL');
-  const fields  = 'shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow';
-  const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=${fields}&_=${Date.now()}`;
-  const res = await fetch(proxy + encodeURIComponent(url), { cache: 'no-store' });
-  const data = await res.json();
-  return data?.quoteResponse?.result || [];
+  const syms   = '^GSPC,^IXIC,^DJI,^RUT,NVDA,MSFT,META,AMZN,GOOGL,AAPL';
+  const fields = 'shortName,regularMarketPrice,regularMarketChangePercent,regularMarketChange,fiftyTwoWeekHigh,fiftyTwoWeekLow,regularMarketPreviousClose';
+  const qs     = `symbols=${encodeURIComponent(syms)}&fields=${fields}&_=${Date.now()}`;
+  const q1url  = `https://query1.finance.yahoo.com/v7/finance/quote?${qs}`;
+  const q2url  = `https://query2.finance.yahoo.com/v7/finance/quote?${qs}`;
+
+  const attempts = [
+    () => fetch(q1url, { cache: 'no-store' }),
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(q1url)}`, { cache: 'no-store' }),
+    () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(q1url)}`, { cache: 'no-store' }),
+    () => fetch(`https://corsproxy.io/?${encodeURIComponent(q2url)}`, { cache: 'no-store' }),
+    () => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(q2url)}`, { cache: 'no-store' }),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      const data = await res.json();
+      const result = data?.quoteResponse?.result;
+      if (!Array.isArray(result) || !result.length) continue;
+      // 장 마감 시 regularMarketPrice가 null이면 전일 종가로 대체
+      result.forEach(q => {
+        if (q.regularMarketPrice == null && q.regularMarketPreviousClose != null) {
+          q.regularMarketPrice = q.regularMarketPreviousClose;
+          q.regularMarketChangePercent = q.regularMarketChangePercent ?? 0;
+        }
+      });
+      if (result.some(q => q.regularMarketPrice != null)) return result;
+    } catch(e) { continue; }
+  }
+  throw new Error('Yahoo Finance 데이터 수집 실패 (모든 경로 차단됨)');
 }
 
 async function fetchNews(avKey) {
@@ -3410,6 +3451,8 @@ async function runAiAnalysis() {
 
   try {
     const [quotes, news] = await Promise.all([fetchMarketData(), fetchNews(avKey)]);
+    lastMarketQuotes = quotes;
+    try { localStorage.setItem('us_quotes_cache', JSON.stringify(quotes)); } catch(e) {}
     renderLiveQuotes(quotes);
 
     const nameMap   = { '^GSPC':'S&P 500', '^IXIC':'Nasdaq', '^DJI':'Dow Jones', '^RUT':'Russell 2000' };
