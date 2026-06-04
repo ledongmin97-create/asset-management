@@ -3235,10 +3235,12 @@ async function refreshMarketAnalysis(btn) {
   btn.disabled = true;
   let prompt = '';
   try {
-    const quotes = lastMarketQuotes;
+    let quotes = lastMarketQuotes;
     if (!quotes.length) {
-      toast('먼저 위의 실시간 업데이트 버튼을 눌러주세요', 'error');
-      return;
+      btn.textContent = '📡 데이터 수집 중...';
+      quotes = await fetchMarketData();
+      lastMarketQuotes = quotes;
+      renderLiveQuotes(quotes);
     }
     prompt = buildMarketPrompt(quotes);
 
@@ -3401,7 +3403,10 @@ async function fetchMarketData() {
   // 1순위: GAS 프록시 (서버사이드 Stooq — CORS·차단 없음)
   if (gasUrl) {
     try {
-      const res = await fetch(`${gasUrl}?action=marketData`, { redirect: 'follow' });
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(`${gasUrl}?action=marketData`, { redirect: 'follow', signal: ctrl.signal });
+      clearTimeout(tid);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.quotes) && data.quotes.length >= 4) return data.quotes;
