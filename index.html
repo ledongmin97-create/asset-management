@@ -3326,6 +3326,10 @@ async function fetchUsMarketData(btn) {
     const quotes = {};
     results.filter(Boolean).forEach(q => { quotes[q.symbol] = q; });
 
+    // 챗봇·Claude분석에서도 쓸 수 있도록 lastMarketQuotes에 저장
+    lastMarketQuotes = Object.values(quotes).filter(Boolean);
+    try { localStorage.setItem('us_quotes_cache', JSON.stringify(lastMarketQuotes)); } catch(e) {}
+
     const fmt    = (v, dec=2) => v != null ? v.toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}) : '-';
     const chgCls = c => c >= 0 ? 'text-up' : 'text-down';
     const arrow  = c => c >= 0 ? '▲' : '▼';
