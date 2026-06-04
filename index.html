@@ -3374,33 +3374,42 @@ function saveUsApiKeys() {
 }
 
 async function fetchMarketData() {
-  // Stooq — CORS 허용, API 키 불필요, 안정적
+  // Stooq — CORS 허용, API 키 불필요, 안정적 (개별 병렬 요청)
   try {
-    const stooqMap = { '^SPX':'^GSPC', '^NDX':'^IXIC', '^DJI':'^DJI', '^RUT':'^RUT' };
-    const url = 'https://stooq.com/q/l/?s=^spx,^ndx,^dji,^rut,nvda.us,msft.us,meta.us,amzn.us,googl.us,aapl.us&f=sd2t2ohlcv&h&e=json';
-    const res = await fetch(url, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      const syms = data?.symbols;
-      if (Array.isArray(syms) && syms.length) {
-        const result = syms.map(s => {
-          const raw   = s.symbol.toUpperCase();
-          const sym   = stooqMap[raw] || raw.replace('.US', '');
-          const close = parseFloat(s.close);
-          const open  = parseFloat(s.open);
-          const chgPct = (close > 0 && open > 0) ? ((close - open) / open * 100) : 0;
+    const stooqSymbols = [
+      { s: '^spx',     out: '^GSPC' },
+      { s: '^ndx',     out: '^IXIC' },
+      { s: '^dji',     out: '^DJI'  },
+      { s: '^rut',     out: '^RUT'  },
+      { s: 'nvda.us',  out: 'NVDA'  },
+      { s: 'msft.us',  out: 'MSFT'  },
+      { s: 'meta.us',  out: 'META'  },
+      { s: 'amzn.us',  out: 'AMZN'  },
+      { s: 'googl.us', out: 'GOOGL' },
+      { s: 'aapl.us',  out: 'AAPL'  },
+    ];
+    const fetches = stooqSymbols.map(({ s, out }) =>
+      fetch(`https://stooq.com/q/l/?s=${s}&f=sd2t2ohlcv&h&e=json`, { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          const q = data?.symbols?.[0];
+          if (!q) return null;
+          const close = parseFloat(q.close);
+          const open  = parseFloat(q.open);
+          if (isNaN(close) || close <= 0) return null;
           return {
-            symbol: sym,
-            regularMarketPrice: (isNaN(close) || close <= 0) ? null : close,
-            regularMarketChangePercent: chgPct,
+            symbol: out,
+            regularMarketPrice: close,
+            regularMarketChangePercent: (open > 0) ? ((close - open) / open * 100) : 0,
             regularMarketChange: (close - open) || 0,
             fiftyTwoWeekHigh: null,
             fiftyTwoWeekLow: null,
           };
-        }).filter(q => q.regularMarketPrice != null);
-        if (result.length >= 5) return result;
-      }
-    }
+        })
+        .catch(() => null)
+    );
+    const results = (await Promise.all(fetches)).filter(Boolean);
+    if (results.length >= 5) return results;
   } catch(e) {}
 
   // Yahoo Finance 폴백 (프록시)
