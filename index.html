@@ -3236,11 +3236,10 @@ async function refreshMarketAnalysis(btn) {
   let prompt = '';
   try {
     let quotes = lastMarketQuotes;
+    if (!quotes.length) quotes = extractQuotesFromGrid();
     if (!quotes.length) {
-      btn.textContent = '📡 데이터 수집 중...';
-      quotes = await fetchMarketData();
-      lastMarketQuotes = quotes;
-      renderLiveQuotes(quotes);
+      toast('실시간 업데이트를 먼저 눌러주세요', 'error');
+      return;
     }
     prompt = buildMarketPrompt(quotes);
 
@@ -3451,6 +3450,28 @@ async function fetchNews(avKey) {
   const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,technology&sort=LATEST&limit=15&apikey=${avKey}`;
   const data = await fetch(url).then(r => r.json());
   return (data.feed || []).slice(0, 12);
+}
+
+function extractQuotesFromGrid() {
+  const grid = document.getElementById('liveQuoteGrid');
+  if (!grid) return [];
+  const dispToSym = { 'S&P 500':'^GSPC', 'Nasdaq':'^IXIC', 'Dow Jones':'^DJI', 'Russell 2000':'^RUT' };
+  return Array.from(grid.querySelectorAll('.quote-card')).map(card => {
+    const sym   = card.querySelector('.quote-symbol')?.textContent.trim();
+    const price = card.querySelector('.quote-price')?.textContent.replace(/[$,]/g,'').trim();
+    const chgEl = card.querySelector('.quote-change-up, .quote-change-down');
+    const chg   = chgEl?.textContent.replace(/[▲▼%]/g,'').trim();
+    const p = parseFloat(price);
+    if (!sym || isNaN(p) || p <= 0) return null;
+    const isDown = chgEl?.classList.contains('quote-change-down');
+    return {
+      symbol: dispToSym[sym] || sym,
+      regularMarketPrice: p,
+      regularMarketChangePercent: parseFloat(chg) * (isDown ? -1 : 1) || 0,
+      regularMarketChange: 0,
+      fiftyTwoWeekHigh: null, fiftyTwoWeekLow: null,
+    };
+  }).filter(Boolean);
 }
 
 function renderLiveQuotes(quotes) {
