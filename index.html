@@ -4007,8 +4007,12 @@ async function saveChatHistory() {
   }
 }
 
+let chatHistoryLoaded = false;
 async function renderChatTab() {
-  await loadChatHistory();
+  if (!chatHistoryLoaded) {
+    await loadChatHistory();
+    chatHistoryLoaded = true;
+  }
   renderChatMessages();
   const cb = document.getElementById('chatIncludePortfolio');
   if (cb) {
@@ -4523,6 +4527,7 @@ fbAuth.onAuthStateChanged(async (user) => {
     ['portfolioAnalysisContent','krAiAnalysisResult','monthlyInsightResult','annualInsightResult','claudeAnalysisContent']
       .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
     chatHistory = [];
+    chatHistoryLoaded = false;
     document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('loginBtn').textContent = '로그인';
