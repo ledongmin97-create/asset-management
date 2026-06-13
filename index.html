@@ -4645,6 +4645,7 @@ async function clearPastedAnalysis() {
 function displayPastedAnalysis(text, savedTime) {
   const el = document.getElementById('portfolioAnalysisContent');
   if (!el || !text) return;
+  el.style.display = 'block';
   const timeStr = savedTime ? new Date(savedTime).toLocaleString('ko-KR') : new Date().toLocaleString('ko-KR');
   el.innerHTML = `
     <div class="ai-result">${marked.parse(text)}</div>
