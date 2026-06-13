@@ -2454,7 +2454,7 @@ function renderUsMarketTab() {
         if (el) { el.innerHTML = data.html; el.style.cssText = data.style; }
       });
     }
-    const ex = JSON.parse(localStorage.getItem('us_extra_cache') || 'null');
+    const ex = JSON.parse(localStorage.getItem(usExtraCacheKey()) || 'null');
     if (ex) {
       const grid = document.getElementById('liveQuoteGrid');
       if (ex.liveQuote?.html && grid) { grid.innerHTML = ex.liveQuote.html; grid.style.display = 'grid'; }
@@ -2789,9 +2789,9 @@ async function saveAiAnalysis(key, rawMd, timestamp) {
   if (!rawMd) return;
   // localStorage 백업 (Firestore 와이프 대비)
   try {
-    const cached = JSON.parse(localStorage.getItem('aiAnalysisCache') || '{}');
+    const cached = JSON.parse(localStorage.getItem(aiCacheKey()) || '{}');
     cached[key] = { rawMd, timestamp };
-    localStorage.setItem('aiAnalysisCache', JSON.stringify(cached));
+    localStorage.setItem(aiCacheKey(), JSON.stringify(cached));
   } catch(e) {}
   if (!currentUser) return;
   try {
@@ -3647,7 +3647,7 @@ async function runAiAnalysis() {
       liveQuote: { html: document.getElementById('liveQuoteGrid').innerHTML },
       analysis:  { html: resultEl.innerHTML }
     };
-    saveDeviceCache('us_extra_cache', usExtraCache);
+    saveDeviceCache(usExtraCacheKey(), usExtraCache);
 
     btn.textContent = '🔄 새로고침';
     toast('데이터 갱신 완료!', 'success');
@@ -4001,8 +4001,10 @@ function chatStorageKey() {
   return currentUser ? `chatHistory_${currentUser.uid}` : 'chatHistory_guest';
 }
 
-function clApiKeyName() { return currentUser ? `cl_api_key_${currentUser.uid}` : 'cl_api_key'; }
-function avKeyName()    { return currentUser ? `us_av_key_${currentUser.uid}`  : 'us_av_key';  }
+function clApiKeyName()    { return currentUser ? `cl_api_key_${currentUser.uid}`    : 'cl_api_key'; }
+function avKeyName()       { return currentUser ? `us_av_key_${currentUser.uid}`     : 'us_av_key';  }
+function aiCacheKey()      { return currentUser ? `aiAnalysisCache_${currentUser.uid}` : 'aiAnalysisCache'; }
+function usExtraCacheKey() { return currentUser ? `us_extra_cache_${currentUser.uid}` : 'us_extra_cache'; }
 
 async function loadChatHistory() {
   if (currentUser) {
@@ -4502,7 +4504,7 @@ async function loadFromFirestore() {
     // AI 분석 결과 복원 (Firestore 우선, localStorage 폴백)
     const firestoreAi = d.aiAnalysis || {};
     let localAi = {};
-    try { localAi = JSON.parse(localStorage.getItem('aiAnalysisCache') || '{}'); } catch(e) {}
+    try { localAi = JSON.parse(localStorage.getItem(aiCacheKey()) || '{}'); } catch(e) {}
     const ai = Object.keys(firestoreAi).length ? firestoreAi : localAi;
     const restoreMap = {
       portfolio:  'portfolioAnalysisContent',
