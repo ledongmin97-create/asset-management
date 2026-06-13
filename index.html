@@ -4527,12 +4527,14 @@ async function loadFromFirestore() {
       usMarket:   'claudeAnalysisContent',
     };
     setTimeout(() => {
-      // 붙여넣기 분석 먼저 복원 (AI 분석이 있으면 이후에 덮어씌움)
-      if (d.userAnalysisText) displayPastedAnalysis(d.userAnalysisText, d.userAnalysisTime || '');
+      // 붙여넣기 분석이 있으면 표시 (포트폴리오 AI 분석보다 우선)
+      const hasPasted = !!d.userAnalysisText;
+      if (hasPasted) displayPastedAnalysis(d.userAnalysisText, d.userAnalysisTime || '');
 
-      // AI 분석 복원 (Firestore 우선)
+      // AI 분석 복원 — 붙여넣기 분석이 있으면 portfolioAnalysisContent는 건너뜀
       Object.entries(restoreMap).forEach(([key, elId]) => {
         if (!ai[key]?.rawMd) return;
+        if (hasPasted && elId === 'portfolioAnalysisContent') return;
         const el = document.getElementById(elId);
         if (!el) return;
         const html = (typeof marked !== 'undefined') ? marked.parse(ai[key].rawMd) : ai[key].rawMd.replace(/\n/g,'<br>');
