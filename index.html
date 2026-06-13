@@ -4527,6 +4527,10 @@ async function loadFromFirestore() {
       usMarket:   'claudeAnalysisContent',
     };
     setTimeout(() => {
+      // 붙여넣기 분석 먼저 복원 (AI 분석이 있으면 이후에 덮어씌움)
+      if (d.userAnalysisText) displayPastedAnalysis(d.userAnalysisText, d.userAnalysisTime || '');
+
+      // AI 분석 복원 (Firestore 우선)
       Object.entries(restoreMap).forEach(([key, elId]) => {
         if (!ai[key]?.rawMd) return;
         const el = document.getElementById(elId);
@@ -4589,7 +4593,6 @@ fbAuth.onAuthStateChanged(async (user) => {
     await loadFromFirestore();
     applyUserUI();
     render();
-    loadUserAnalysis();
     document.getElementById('loadingOverlay').style.display = 'none';
   } else {
     currentUser = null; currentUserMeta = null;
