@@ -3649,6 +3649,19 @@ async function runAiAnalysis() {
     };
     saveDeviceCache(usExtraCacheKey(), usExtraCache);
 
+    // Firestore에도 저장 (다른 PC에서도 복원 가능하도록)
+    if (currentUser) {
+      try {
+        await fbDb.collection('userData').doc(currentUser.uid).update({
+          usMarketExtra: {
+            analysisHtml:   resultEl.innerHTML,
+            liveQuoteHtml:  document.getElementById('liveQuoteGrid').innerHTML,
+            timestamp:      new Date().toLocaleString('ko-KR')
+          }
+        });
+      } catch(e) {}
+    }
+
     btn.textContent = '🔄 새로고침';
     toast('데이터 갱신 완료!', 'success');
   } catch(e) {
@@ -4521,6 +4534,19 @@ async function loadFromFirestore() {
         const html = (typeof marked !== 'undefined') ? marked.parse(ai[key].rawMd) : ai[key].rawMd.replace(/\n/g,'<br>');
         renderAiResult(html, el, ai[key].timestamp || '', ai[key].rawMd);
       });
+
+      // 미국시장 분석 패널 복원 (analysisResult + liveQuoteGrid)
+      if (d.usMarketExtra?.analysisHtml) {
+        const cache = {
+          liveQuote: { html: d.usMarketExtra.liveQuoteHtml || '' },
+          analysis:  { html: d.usMarketExtra.analysisHtml }
+        };
+        try { localStorage.setItem(usExtraCacheKey(), JSON.stringify(cache)); } catch(e) {}
+        const res  = document.getElementById('analysisResult');
+        const grid = document.getElementById('liveQuoteGrid');
+        if (res)  { res.innerHTML  = d.usMarketExtra.analysisHtml;  res.style.display  = 'block'; }
+        if (grid && d.usMarketExtra.liveQuoteHtml) { grid.innerHTML = d.usMarketExtra.liveQuoteHtml; grid.style.display = 'grid'; }
+      }
     }, 500);
   } else {
     const isOwner = currentUserMeta && currentUserMeta.username === 'ledongmin97';
